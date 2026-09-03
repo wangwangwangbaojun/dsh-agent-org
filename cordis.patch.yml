@@ -1,0 +1,3 @@
+- insert:
+    - id: agent-org
+      name: '@dsh-community/dsh-agent-org'
