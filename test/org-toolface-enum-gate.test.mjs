@@ -25,6 +25,13 @@
 //   模板串（引用域层常量源、双写面消灭），工具面已无单引号字面量数字区间自述可解析。
 //   即：翻转条件的字面对象（maxTokens description 修复票）已到达，但本门禁 G2 提取器只解析单引号
 //   字面量，照票面维持 skip 并留痕；转正式需 node-4 先出 G2 提取器补丁（本票不改他人门禁逻辑）。
+// ————— 翻转注记（node-4｜DEF-EDGEKIND-1 回归票 mtnhz0ow-m7gr｜2026-09-05）—————
+// 翻转条件已到达（417e97e maxTokens 自述修复已入仓），随本票出承诺的 G2 提取器补丁并转正式：
+//   ① 提取器双形态——单引号数字区间旧形（漂移样张必须仍可见，防修复回退隐身）+ 反引号模板引用形
+//     （`1..${LIMITS.KEY}`，现形态；引用必须命中域层 LIMITS 真实键，悬空引用即红）；
+//   ② 提取器自检对（旧形样张+新形样张各须解析到 1 处）——G2 正是被旧提取器单形态失明打下线的，
+//     失明型假绿禁止（手法与 toolface-selfdesc.test.mjs G0a/b/c 同源）；
+//   ③ 旧字面量上界比对判据逐字保留；G2 由 test.skip 转 test 正式闸。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -98,14 +105,25 @@ function parseLimits(orgSrc) {
   return out;
 }
 
-test.skip('G2 工具面数值区间自述与域层 LIMITS 一致（§G 泛化：禁止界值双写漂移）【OPS3-CLOSE C2 挂账：翻转条件见文件头注记】', () => {
+test('G2 工具面数值区间自述与域层 LIMITS 一致（§G 泛化：禁止界值双写漂移）【OPS3-CLOSE C2 已翻转转正式：判据见文件头翻转注记】', () => {
   const limits = parseLimits(srcOrg);
   assert.ok(limits.size >= 4, `LIMITS 解析自检非空，实测 ${limits.size}`);
-  const re = /(\w+):\s*\{\s*description:\s*'[^']*?(\d+)\.\.(\d+)[^']*'/g;
-  const ranges = [...srcIndex.matchAll(re)].map((m) => ({ field: m[1], lo: Number(m[2]), hi: Number(m[3]) }));
-  assert.ok(ranges.length >= 1, 'G2 提取器自检：工具面应至少解析到 1 处数值区间自述（当前=maxTokens）');
-  for (const { field, hi } of ranges) {
+  // 旧形：单引号自述里的数字区间（漂移必可见）；新形：反引号模板引用 1..${LIMITS.KEY}（同源即正确）
+  const reLiteral = /(\w+):\s*\{\s*description:\s*'[^']*?(\d+)\.\.(\d+)[^']*'/g;
+  const reRef = /(\w+):\s*\{\s*description:\s*`[^`]*?(\d+)\.\.\$\{LIMITS\.(\w+)\}[^`]*`/g;
+  // 提取器自检：两种形态各须解析到样张（缺任一形态=失明=本门禁作废）
+  const refToken = '$' + '{LIMITS.maxTokens}';
+  const sample = `foo: { description: 'n 1..64000 x' },\nbar: { description: \`n 1..${refToken} y\` },`;
+  assert.equal([...sample.matchAll(reLiteral)].length, 1, 'G2 提取器自检：单引号数字区间样张必须可解析（旧口径漂移必可见）');
+  assert.equal([...sample.matchAll(reRef)].length, 1, 'G2 提取器自检：模板引用区间样张必须可解析（新口径不可见即假绿）');
+  const literal = [...srcIndex.matchAll(reLiteral)].map((m) => ({ field: m[1], lo: Number(m[2]), hi: Number(m[3]) }));
+  const refs = [...srcIndex.matchAll(reRef)].map((m) => ({ field: m[1], lo: Number(m[2]), refKey: m[3] }));
+  assert.ok(literal.length + refs.length >= 1, `G2 提取器自检：工具面应至少解析到 1 处数值区间自述，实测 literal=${literal.length} ref=${refs.length}`);
+  for (const { field, hi } of literal) {
     if (!limits.has(field)) continue; // 非 LIMITS 管辖的区间：信息级跳过
     assert.equal(hi, limits.get(field), `${field} 自述上界 ${hi} ≠ 域层 LIMITS.${field}=${limits.get(field)}（工具面与域层双写漂移，§G 同源缺陷族）`);
+  }
+  for (const { field, refKey } of refs) {
+    assert.ok(limits.has(refKey), `${field} 自述模板引用 LIMITS.${refKey}，但域层 LIMITS 无此键（悬空引用，自述失去真值源）`);
   }
 });
