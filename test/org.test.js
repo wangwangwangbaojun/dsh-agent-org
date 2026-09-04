@@ -5,11 +5,11 @@
 // 运行：npm test（= node --test）。所有落盘路径经 DSH_AGENT_ORG_PATH 重定向到临时目录，绝不碰 ~/.dsh/agent-org。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { OrgError, SCHEMA_VERSION, loadOrg, prepareDoc } from '../lib/org.js';
+import { OrgError, SCHEMA_VERSION, atomicWrite, backupOrg, loadOrg, prepareDoc, saveOrg, tmpNameFor } from '../lib/org.js';
 
 // —— ① 版本白名单：白名单外一切形态拒收，错误码稳定、文案写明支持范围（评审给的钉死口径，原样保留）——
 const good = () => ({ schemaVersion: 2, orgs: [{ id: 'o', name: 'n', rootNodeId: 'a', nodes: [{ id: 'a', parentId: null, name: 'A' }] }] });
@@ -243,4 +243,94 @@ test('边界：覆盖导入 confirm 位于 fetch(/import) 之前，确认框仍�
   assert.ok(at >= 0, '未找到覆盖导入 confirm');
   assert.ok(fetchAt >= 0, "未找到 fetch(API + '/import' 调用点");
   assert.ok(at < fetchAt, `确认框须先于导入请求：confirm@${at} vs fetch@${fetchAt}`);
+});
+
+// ============================================================================
+// ARCH-ADJ-2/ADD-3（BE-V14-A）：saveOrg/backupOrg 底层原语泛化 golden 锁
+// D3 白名单口径：只准新增用例，既有 13 案零触碰；锁四件事——
+// ① 缺省 tmp 前缀逐字节等旧（`.org.<pid>.<ts>.tmp`）② tmpPrefix 字符集硬红线（防路径逃逸）
+// ③ D1 失败路径清孤儿 tmp ④ backupOrg 域外零改动（`.org-bak.` 字面 + 0600 + keep=5 + 缺源 false）。
+// 全部落盘走 mkdtemp 临时目录，绝不触碰 ~/.dsh/agent-org。
+// ============================================================================
+
+// —— ① tmp 命名式 golden：默认 'org' 与参数化 'team' 的逐字符格式，tmp 恒落目标同目录 ——
+test('tmpNameFor：默认 .org.<pid>.<ts>.tmp 逐字节等旧，team 前缀同式，目录恒等于目标 dirname', () => {
+  assert.match(tmpNameFor('/tmp/x/org.json'), /^\/tmp\/x\/\.org\.\d+\.\d+\.tmp$/);
+  assert.match(tmpNameFor('/tmp/x/team.json', 'team'), /^\/tmp\/x\/\.team\.\d+\.\d+\.tmp$/);
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-org-tmp-'));
+  try {
+    assert.equal(join(tmpNameFor(join(dir, 'sub', 'org.json')), '..'), join(dir, 'sub'), 'tmp 必须与目标同目录（rename 同盘原子的前提）');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// —— ② 字符集白名单：'/'、'..'、'.'、大写、超长全部写前拒绝，且不留任何文件系统痕迹 ——
+test('tmpPrefix 白名单 [a-z0-9-]{1,16}：路径逃逸/点号/大写/17 字符合法形态外一律 throw', () => {
+  for (const bad of ['org/x', 'x/../../etc', '..', '.', '', 'ORG', 'or.g', 'a_b', 'a'.repeat(17)]) {
+    assert.throws(() => tmpNameFor('/tmp/x/org.json', bad), (err) => err instanceof OrgError && /tmpPrefix/.test(err.message), `应拒收：${JSON.stringify(bad)}`);
+  }
+  assert.match(tmpNameFor('/tmp/x/org.json', 'team'), /\.team\./, '合法前缀 team 必须放行（BE-V14-A 消费面）');
+  assert.match(tmpNameFor('/tmp/x/org.json', 'a'.repeat(16)), /\.a{16}\./, '16 字符边界内放行');
+});
+
+// —— ③ atomicWrite 成功路径：字节 golden + 缺省前缀等旧 + 目标目录自动建 + 零 tmp 残留 ——
+test('atomicWrite：默认前缀字节等旧管线、team 前缀带 mode 0600、成功/失败均零 tmp 残留', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-org-aw-'));
+  try {
+    const p = join(dir, 'nested', 'org.json');
+    atomicWrite(p, '{"a":1}\n');
+    assert.deepEqual([...readFileSync(p)], [...Buffer.from('{"a":1}\n')]);
+    const t = join(dir, 'team.json');
+    atomicWrite(t, '{}\n', { tmpPrefix: 'team', mode: 0o600 });
+    assert.equal(statSync(t).mode & 0o777, 0o600, 'opts.mode 透传 writeFileSync（ADD-3 锚③）');
+    // D1 失败路径：目标同名是空目录 → rename 必抛（EISDIR/ENOTDIR），孤儿 tmp 必须被清掉
+    const blocked = join(dir, 'blocked');
+    mkdirSync(blocked);
+    assert.throws(() => atomicWrite(blocked, 'x'));
+    const residue = readdirSync(dir).filter((n) => /\.[^/]*\.\d+\.\d+\.tmp$/.test(n));
+    assert.deepEqual(residue, [], `失败路径不得留孤儿 tmp，实测：${residue.join(', ')}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// —— saveOrg 五参行为零漂移（ADD-2.2 调用面：index.js 五处两参调用不受影响）+ 校验先于写 ——
+test('saveOrg：委托原语后字节/返回/建目录等旧，validate 仍先于任何写（非法档不落盘）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-org-so-'));
+  try {
+    const p = join(dir, 'org.json');
+    const doc = prepareDoc(good()); // validate 要求画布坐标，先走 normalize（既有 13 案同款 good() 语料）
+    assert.equal(saveOrg(p, doc), undefined, '返回恒 undefined 等旧');
+    assert.deepEqual([...readFileSync(p)], [...Buffer.from(`${JSON.stringify(doc, null, 2)}\n`)]);
+    const badP = join(dir, 'bad', 'org.json');
+    // 注意口径：validate 的版本闸是 plain Error（v0.13 等旧，OrgError 化属 prepareDoc/HTTP 面），此处只锁「先校验后写」
+    assert.throws(() => saveOrg(badP, { ...doc, schemaVersion: 3 }), /schemaVersion 不受支持/);
+    assert.equal(readdirSync(dir).includes('bad'), false, '校验失败不得先建目录后 throw');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// —— ④ backupOrg 域外零改动：缺源 false / 0600 / `.org-bak.` tmp 字面 / 轮转 keep=5 ——
+test('backupOrg（域外红线）：缺源 false；备份 0600；ISO 名轮转 keep=5 裁最旧', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-org-bk-'));
+  try {
+    const p = join(dir, 'org.json');
+    assert.equal(backupOrg(p), false, '缺源必须 false 不抛');
+    writeFileSync(p, JSON.stringify(good(), null, 2) + '\n');
+    for (let i = 0; i < 7; i += 1) {
+      backupOrg(p); // 默认 keep=5
+      const t0 = Date.now(); while (Date.now() === t0) { /* 跨毫秒保证 ISO 名互异 */ }
+    }
+    const baks = readdirSync(dir).filter((n) => n.startsWith('org.json.bak.')).sort();
+    assert.equal(baks.length, 5, `keep=5 轮转后应恰 5 份，实测 ${baks.length}`);
+    assert.ok(baks[0] < baks[4], 'ISO 命名须时间升序可排（最旧先裁的前提）');
+    assert.equal(statSync(join(dir, baks[0])).mode & 0o777, 0o600, '备份 0600 红线');
+    assert.deepEqual(readdirSync(dir).filter((n) => n.includes('.org-bak.')), [], 'backup 亦须零 tmp 残留');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// —— ADD-1 / ADD-3 源码级验收锚（结构锁：重构回退即红）——
+test('源码锚：backupOrg 保持 `.org-bak.` 字面未走新原语（D3 域外）；lib/team.js renameSync 零命中（ADD-1）', async () => {
+  const orgSrc = await readFile(new URL('../lib/org.js', import.meta.url), 'utf8');
+  assert.ok(orgSrc.includes('`.org-bak.${process.pid}.${Date.now()}.tmp`'), 'backupOrg tmp 字面必须逐字保持（域外承诺）');
+  const teamSrc = await readFile(new URL('../lib/team.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(teamSrc, /renameSync/, 'lib/team.js 不得出现 renameSync（原子写只走 atomicWrite 复用）');
+  assert.ok(teamSrc.includes("atomicWrite("), 'lib/team.js 必须复用 org.js 的 atomicWrite（禁另写临时文件管线）');
+  assert.ok(teamSrc.includes("{ tmpPrefix: 'team' }"), "lib/team.js 落盘必须带 tmpPrefix:'team'（ADD-2.3 前缀隔离）");
 });
