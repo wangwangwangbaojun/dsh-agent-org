@@ -82,4 +82,11 @@ team.json 不存在→team:null+stats 全 0（前端空态「尚无团队立项�
 
 实现期契约争议一律 org_send 转我仲裁；§A–§G 面冻结，仅接受增量裁定。三封齐，章节完整，验收面=可直接拆票派发、实现者零追问。
 
+§G 尾部增量裁定入册（不开冻结面；来源 ARCH-ADJ-1，源件 mtmxi95d-ehj3 代码评审请示，架构师终裁、抄送 lead，lead 2026-09-04 拼接入册）
+ADD-1（红线·blocker）：lib/team.js 必须 import lib/org.js 原子写/备份原语，禁止再写一套。§A 原文「参照模式」+指定 `.team.<pid>.<ts>.tmp` 前缀，字面上在命令实现第四套——更正为：org.js 原语泛化（tmpPrefix 选项）、team.js 只 import。验收锚：v0.14 diff 新增行内 `renameSync` 原子写对=0 命中。team.lock 已覆盖 lost-update，评审按 C6 核「锁圈读改写、邮件 IO 在锁外」，违反=blocker。
+ADD-2（非红线·ARCH-DEBT-01，归 v0.15）：client.js/index.js 切分与三套实现归一不入 v0.14（正确性无关+与换代风暴红线冲突）。软约束：新增纯函数逻辑全落 lib/team.js，client.js 只收 FE tab 渲染增量；切分与功能票混做=blocker。
+R1（基准石三件套=hash+annotated tag+第二副本，自 v0.14 起缺=blocker，不追溯）：lead 执行备案（2026-09-04）——`git tag -a baseline-v0.13.0 23f620f` 已落；第二副本 `~/.dsh/backups/baselines/baseline-v0.13.0.bundle`（--all 完整历史，git bundle verify 通过，sha256 31ffed245b5f373c0aa0b4344c4bf1ce34513ebbb8e036117d40973e4e9f7937，94407B）；有 remote 后 push --follow-tags。hash 仍是唯一权威标识，tag 只是锚。
+R2（发布红线 R-LIC·blocker，生效于发布面）：对外发布物必须 LICENSE 文件与 package.json:"MIT" 一致。已挂末波票「README+version 0.14.0」验收项：LICENSE 先落（MIT 文本+版权人名称；版权人须人定，勿代拟——待 lead 人工确定后方可开票执行）。
+R3（验收基线定版）：git archive 纯净树+HOME 隔离+`node --test` 全绿；v0.14 起测试数棘轮只升不降，起点 29/29（评审实测）。
+
 ---
