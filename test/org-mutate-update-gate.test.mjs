@@ -1,4 +1,4 @@
-// BUG-V14 常备门禁：org_mutate op=update 静默 no-op 修复的 17 案固化回归（QA-GATE1）。
+// BUG-V14 常备门禁：org_mutate op=update 静默 no-op 修复的 18 案固化回归（QA-GATE1）。
 // 任务 id=mtn0evgj-nb8i（BUG-V14 线 mtlluww2-kkws 尾单）；源脚本 /tmp/bugv14-verify/verify.mjs（不入库，本文件即其固化形态）。
 //
 // 缺陷回顾（BUG-V14，修复见 commit 6a6e8ae）：
@@ -8,7 +8,8 @@
 //   连带的 B1/B2 校验防线（toolScope 冲突、maxTokens 越界）也被一并绕过——不报错、不落盘、假成功。
 //   修复 = op=update 时把平铺字段按需打包进 request.patch，其余 op 零改动。
 //
-// 用例面 = 17 案，编号与源脚本一一对应（A1 A2 A3 A4 A4b B1 B2 B3 B4 C1 C2 C3 C4 C5 C6 C7 D1）：
+// 用例面 = 18 案，编号与源脚本一一对应（A1 A2 A3 A4 A4b B1 B2 B3 B4 C1 C2 C3 C4 C5 C6 C7 D1），
+//   外加评审补案 A5（代码评审意见 mtlk6288-eanw，四象限(c) patch非replace 唯一缺口，后插于 A4b 之后，不在源脚本编号集内）：
 //   A 组 = update 落盘对账（本票修复面）；B 组 = 校验防线不被绕过 + 报错路径零落盘；
 //   C 组 = 其余 op（add/move/addEdge/removeEdge/layoutAll/delete）零回归；D1 = 数据文件隔离。
 //   全部断言走「工具面调用 → 磁盘回读对账」，不信返回值文案。
@@ -17,6 +18,8 @@
 //
 // 双向证据契约（lead 验收②）：本文件在 pre-fix 净树（c162805 及更早）必红——
 //   预期红案 A1 A2 A4b B1 B2 B4（静默 no-op 与校验被绕过的直接显形）；在 fix 树必绿。
+//   A5（评审补案，象限(c) patch非replace）：pre-fix/post-fix 同绿——pre-fix 静默 no-op 下平凡通过，
+//   其价值是拦截未来「部分字段更新顺带清空其余字段」的 replace 化回归；pre-fix 必红集合不变。
 //
 // 口径钉版说明（lead 裁定②）：tool schema 注 maxTokens 1..64000，org.js 实容 1..1_000_000，
 //   该口径差不入 v0.14；故 B2 只取两口径之外的 99_999_999 做越界断言，不在 64000/1e6 边界钉版。
@@ -130,6 +133,16 @@ test('A4b update 空入参后磁盘字段仍为 A1/A2 终值（零变化契约�
   assert.equal(n.title, '资深执行', '空入参竟回滚了 title（fix 语义下不可能）');
   assert.equal(n.name, '工人B');
   assert.equal(n.maxTokens, 4096);
+});
+
+test('A5 update 部分字段 patch 不得顺带清空未打补丁字段（patch 非 replace 语义）', async () => {
+  const before = diskNode('node-w');
+  await mutateTool.execute({ op: 'update', id: 'node-w', title: '资深执行' });
+  const n = diskNode('node-w');
+  assert.equal(n.title, '资深执行');
+  for (const f of ['name', 'systemPrompt', 'model', 'toolScope', 'maxTokens', 'x', 'y', 'layout', 'parentId', 'id']) {
+    assert.deepEqual(n[f], before[f], `未打补丁字段 ${f} 在部分字段 patch 下变化 → patch 被实现成 replace`);
+  }
 });
 
 // ============ B. 校验防线不被绕过（B1/B2 = BUG-V14 静默 no-op 缺陷案，lead 点名必含；pre-fix 必红） ============
