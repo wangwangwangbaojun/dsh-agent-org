@@ -165,20 +165,25 @@ function resolveSelf() {
 /** spawn headless 一次性角色进程；返回 {ok, text}。邮件是该进程唯一的输入输出通道。 */
 function runHeadless(taskText) {
   return new Promise((resolve) => {
+    // detached：npx→sh→dsh 整棵子进程树自成一组分；杀组不留孤儿子进程，
+    // 孤儿继承的 stdio 管道也随组终结，daemon 不会被"管道不 close"吊死。
     const child = spawn('npx', ['dsh', '--profile', HEADLESS_PROFILE, taskText], {
       stdio: ['ignore', 'pipe', 'pipe'],
       // 身份注入：本次执行代表 SELF_ID（收件箱任务与灵感任务同构生效），工具端消费见 lib/index.js org_report
       env: { ...process.env, [ENV_NODE_ID]: SELF_ID },
+      detached: true,
     });
     let stdout = '';
     let stderr = '';
     let settled = false;
-    const finish = (value) => { if (!settled) { settled = true; resolve(value); } };
+    const finish = (value) => { if (!settled) { settled = true; try { process.kill(-child.pid, 'SIGKILL'); } catch { /* 组已没了 */ } resolve(value); } };
     const timer = setTimeout(() => {
+      // 兜底双保险：组杀 + 即便 fd 泄漏让 close 永远不来，结果也已定死
+      try { process.kill(-child.pid, 'SIGKILL'); } catch { /* 已退出 */ }
       try { child.kill('SIGKILL'); } catch { /* 已退出 */ }
-      finish({ ok: false, output: `角色进程超时（${RUN_TIMEOUT_S}s）已强杀；stderr 摘要：${stderr.slice(-800)}` });
+      finish({ ok: false, output: `角色进程超时（${RUN_TIMEOUT_S}s）已强杀（组级）；stderr 摘要：${stderr.slice(-800)}` });
     }, RUN_TIMEOUT_S * 1000);
-    child.stdout.on('data', (chunk) => { stdout += chunk; if (stdout.length > MAX_OUTPUT) child.kill('SIGKILL'); });
+    child.stdout.on('data', (chunk) => { stdout += chunk; if (stdout.length > MAX_OUTPUT) finish({ ok: false, output: `输出超上限（${MAX_OUTPUT} 字符）已强杀：${stdout.slice(0, 4000)}` }); });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.on('error', (cause) => { clearTimeout(timer); finish({ ok: false, output: `无法启动角色进程：${cause.message}` }); });
     child.on('close', (code) => {
