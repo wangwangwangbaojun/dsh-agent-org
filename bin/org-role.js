@@ -64,6 +64,7 @@ const MAX_OUTPUT = 60000; // 角色进程 stdout 截断上限
 const MAX_BODY = 6000;    // 单封邮件正文注入上限（防任务文本里塞垃圾撑爆 prompt）
 const DEFAULT_HOPS = 6;   // 邮件乒乓护栏：任务默认最多转手次数
 const ENV_TASK_ID = 'DSH_ORG_TASK_ID';
+const ENV_NODE_ID = 'DSH_ORG_NODE_ID'; // headless 子进程身份：org_report 据此为 reports.jsonl 的 report 行补 from/fromName（谁交付了什么）
 
 const SELF_SCRIPT = fileURLToPath(import.meta.url);
 
@@ -166,7 +167,8 @@ function runHeadless(taskText) {
   return new Promise((resolve) => {
     const child = spawn('npx', ['dsh', '--profile', HEADLESS_PROFILE, taskText], {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
+      // 身份注入：本次执行代表 SELF_ID（收件箱任务与灵感任务同构生效），工具端消费见 lib/index.js org_report
+      env: { ...process.env, [ENV_NODE_ID]: SELF_ID },
     });
     let stdout = '';
     let stderr = '';
