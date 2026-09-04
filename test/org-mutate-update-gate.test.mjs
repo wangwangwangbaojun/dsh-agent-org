@@ -20,6 +20,9 @@
 //   预期红案 A1 A2 A4b B1 B2 B4（静默 no-op 与校验被绕过的直接显形）；在 fix 树必绿。
 //   A5（评审补案，象限(c) patch非replace）：pre-fix/post-fix 同绿——pre-fix 静默 no-op 下平凡通过，
 //   其价值是拦截未来「部分字段更新顺带清空其余字段」的 replace 化回归；pre-fix 必红集合不变。
+//   A5 誊抄勘误（QA 实测，评审意见 mtlk6288-eanw 系）：评审原文 assert.equal(n.title,'资深执行')
+//   是 A2 磁盘写入的前置回声（pre-fix 下盘上仍为 '执行'），实测 c162805 成第 7 个派生红案，违反上句契约；
+//   已改为「自给基线 + 纯不变式」两形态（另：纯快照形态会被更早的 A3 部分 patch 预先清空基线而失明，QA 变异实测）。
 //
 // 口径钉版说明（lead 裁定②）：tool schema 注 maxTokens 1..64000，org.js 实容 1..1_000_000，
 //   该口径差不入 v0.14；故 B2 只取两口径之外的 99_999_999 做越界断言，不在 64000/1e6 边界钉版。
@@ -136,10 +139,17 @@ test('A4b update 空入参后磁盘字段仍为 A1/A2 终值（零变化契约�
 });
 
 test('A5 update 部分字段 patch 不得顺带清空未打补丁字段（patch 非 replace 语义）', async () => {
+  // 自给基线：一次多字段 patch 写入可区分值——被 patch 的字段在任何 patch/replace 语义下都会落盘，
+  // 故基线值对 clean 树与 replace 化树同样成立；pre-fix 全 no-op 下基线=盘上旧值，同样成立。
+  // 不能只靠快照吃 A1/A2 终值：replace 化下任何先于本案的部分 patch（A3）已把目标字段清成默认值，快照失明（QA 变异实测）。
+  await mutateTool.execute({ op: 'update', id: 'node-w', systemPrompt: 'a5-baseline-p', model: { model: 'a5-baseline-m' } });
   const before = diskNode('node-w');
+  // 同值 title 单字段 patch（评审原案形态；title 不动，不破坏 B4 对 title 的下游断言）。
   await mutateTool.execute({ op: 'update', id: 'node-w', title: '资深执行' });
   const n = diskNode('node-w');
-  assert.equal(n.title, '资深执行');
+  // 评审原文首行为 assert.equal(n.title, '资深执行')——A2 写盘的前置回声，pre-fix 必红（见文件头勘误注记）。
+  // 全案只判「相对 before 零位移」：pre-fix（全 no-op）平凡绿，clean 树（patch 语义）绿，replace 化回归必红。
+  assert.equal(n.title, before.title, 'title 同值 patch 不得改动 title 自身');
   for (const f of ['name', 'systemPrompt', 'model', 'toolScope', 'maxTokens', 'x', 'y', 'layout', 'parentId', 'id']) {
     assert.deepEqual(n[f], before[f], `未打补丁字段 ${f} 在部分字段 patch 下变化 → patch 被实现成 replace`);
   }
