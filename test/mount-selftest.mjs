@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 import { apply, name as pluginName, inject } from '../lib/index.js';
 
-const TOOL_NAMES = ['org_chart', 'org_create', 'org_delete', 'org_delegate', 'org_inbox', 'org_mutate', 'org_node_get', 'org_report', 'org_send', 'org_task'];
+const TOOL_NAMES = ['org_chart', 'org_create', 'org_delegate', 'org_delete', 'org_inbox', 'org_mutate', 'org_node_get', 'org_report', 'org_send', 'org_task'];
 
 /** 假宿主 ctx：reflect.get 按开关返回服务；on 记录监听；effect 同步执行（对齐 cordis 装载语义）。 */
 function makeCtx({ hasTools = false, hasWebServer = false } = {}) {
@@ -46,6 +46,7 @@ function makeCtx({ hasTools = false, hasWebServer = false } = {}) {
 }
 
 const assertTenTools = (seen) => {
+  assert.deepEqual(TOOL_NAMES, [...TOOL_NAMES].sort(), 'TOOL_NAMES 字面必须保持字典序');
   const names = seen.tools.map((t) => t.name).sort();
   assert.deepEqual(names, [...TOOL_NAMES].sort(), '应为恰好 10 个 org_* 工具');
 };
