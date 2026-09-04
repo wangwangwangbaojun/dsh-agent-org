@@ -1,15 +1,19 @@
-// 无头兼容自测（任务 mtk1le4d-1y4l，架构裁定：inject 收缩 + webServer 探测/补挂）。
+// 无头兼容自测（任务 mtk1le4d-1y4l，架构裁定：inject 收缩 + webServer 探测/补挂；
+// v0.14 BE-V14-A 增量：TOOL_NAMES 10→14、routes 1→2、/team 假 org 空态 200 冒烟）。
 // 纯内存假 ctx，不 spawn 任何 dsh 进程、不发 HTTP 请求；校验 apply() 的四条装载路径：
-//   A1 headless（服务后置）：tools 经 internal/service 补挂 10 工具；webServer 永不到货 → 零路由、零异常
-//   A2 探测命中 + 事件重复：try/catch 吞同名冲突，仍 10 工具
-//   B  web 双服务前置：探测即挂 10 工具 + 1 路由；重复事件不双挂（routeMounted 守卫）
-//   C  web 双服务后置：两事件补挂 10 工具 + 1 路由
-//   D  路由 handler 冒烟：GET /health 走真实 route 函数（只读端点），期望 200 + ok:true
+//   A1 headless（服务后置）：tools 经 internal/service 补挂 14 工具；webServer 永不到货 → 零路由、零异常
+//   A2 探测命中 + 事件重复：try/catch 吞同名冲突，仍 14 工具
+//   B  web 双服务前置：探测即挂 14 工具 + 2 路由（前缀 + /team 独立注册，§G 挂载面 1→2）；重复事件不双挂（routeMounted 守卫）
+//   C  web 双服务后置：两事件补挂 14 工具 + 2 路由
+//   D  路由 handler 冒烟：GET /health + GET /team（只读端点，假 org 空态），期望 200 + ok:true
 // 运行：node test/mount-selftest.mjs（退出码 0 = 全部通过）
 import assert from 'node:assert/strict';
+import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { apply, name as pluginName, inject } from '../lib/index.js';
 
-const TOOL_NAMES = ['org_chart', 'org_create', 'org_delegate', 'org_delete', 'org_inbox', 'org_mutate', 'org_node_get', 'org_report', 'org_send', 'org_task'];
+const TOOL_NAMES = ['org_chart', 'org_create', 'org_delegate', 'org_delete', 'org_inbox', 'org_mutate', 'org_node_get', 'org_report', 'org_send', 'org_task', 'org_team_done', 'org_team_plan', 'org_team_status', 'org_team_talk'];
 
 /** 假宿主 ctx：reflect.get 按开关返回服务；on 记录监听；effect 同步执行（对齐 cordis 装载语义）。 */
 function makeCtx({ hasTools = false, hasWebServer = false } = {}) {
@@ -45,10 +49,10 @@ function makeCtx({ hasTools = false, hasWebServer = false } = {}) {
   return { ctx, seen, emit };
 }
 
-const assertTenTools = (seen) => {
+const assertFourteenTools = (seen) => {
   assert.deepEqual(TOOL_NAMES, [...TOOL_NAMES].sort(), 'TOOL_NAMES 字面必须保持字典序');
   const names = seen.tools.map((t) => t.name).sort();
-  assert.deepEqual(names, [...TOOL_NAMES].sort(), '应为恰好 10 个 org_* 工具');
+  assert.deepEqual(names, [...TOOL_NAMES].sort(), '应为恰好 14 个 org_* 工具（v0.14 含 org_team_* 四工具）');
 };
 
 let passed = 0;
@@ -75,17 +79,17 @@ console.log('== A1 headless：无 webServer，tools 走事件补挂 ==');
       assert.equal(hit[1], false, `${svc} 探测必须 strict=false`);
     }
   });
-  check('internal/service(tools) 补挂 10 工具', () => {
+  check('internal/service(tools) 补挂 14 工具', () => {
     emit('tools');
-    assertTenTools(seen);
+    assertFourteenTools(seen);
   });
   check('internal/service(webServer) 永不到货 → 零路由且无异常', () => {
     emit('unrelated'); emit('systemPrompt');
     assert.equal(seen.routes.length, 0);
   });
-  check('事件重复投递 tools → try/catch 吞同名，仍 10', () => {
+  check('事件重复投递 tools → try/catch 吞同名，仍 14', () => {
     emit('tools');
-    assertTenTools(seen);
+    assertFourteenTools(seen);
   });
 }
 
@@ -93,23 +97,25 @@ console.log('== A2 探测命中 tools + 事件再来（web 常见时序）==');
 {
   const { ctx, seen, emit } = makeCtx({ hasTools: true });
   apply(ctx);
-  check('探测即挂 10 工具', () => assertTenTools(seen));
-  check('事件再来不炸不重', () => { emit('tools'); assertTenTools(seen); });
+  check('探测即挂 14 工具', () => assertFourteenTools(seen));
+  check('事件再来不炸不重', () => { emit('tools'); assertFourteenTools(seen); });
 }
 
 console.log('== B web：双服务前置 ==');
 {
   const { ctx, seen, emit } = makeCtx({ hasTools: true, hasWebServer: true });
   apply(ctx);
-  check('探测挂 10 工具 + 1 前缀路由', () => {
-    assertTenTools(seen);
-    assert.equal(seen.routes.length, 1);
+  check('探测挂 14 工具 + 2 路由（API_ROOT 前缀 + /team 独立前缀，§G 挂载面 1→2）', () => {
+    assertFourteenTools(seen);
+    assert.equal(seen.routes.length, 2);
     assert.deepEqual({ kind: seen.routes[0].kind, path: seen.routes[0].path }, { kind: 'prefix', path: '/dsh-agent-org/v1' });
     assert.equal(typeof seen.routes[0].handler, 'function');
+    assert.deepEqual({ kind: seen.routes[1].kind, path: seen.routes[1].path }, { kind: 'prefix', path: '/dsh-agent-org/v1/team' });
+    assert.equal(seen.routes[1].handler, seen.routes[0].handler, '/team 注册必须复用同一 handler（suffix 分派）');
   });
   check('webServer 事件补触发不双挂（重复 register 会抛=挂载事故）', () => {
     emit('webServer'); emit('webServer');
-    assert.equal(seen.routes.length, 1);
+    assert.equal(seen.routes.length, 2);
   });
 }
 
@@ -118,13 +124,13 @@ console.log('== C web：双服务后置（事件补挂主路径）==');
   const { ctx, seen, emit } = makeCtx({});
   apply(ctx);
   emit('webServer'); emit('tools'); emit('webServer');
-  check('两事件后恰好 10 工具 + 1 路由', () => {
-    assertTenTools(seen);
-    assert.equal(seen.routes.length, 1);
+  check('两事件后恰好 14 工具 + 2 路由', () => {
+    assertFourteenTools(seen);
+    assert.equal(seen.routes.length, 2);
   });
 }
 
-console.log('== D 路由 handler 冒烟（只读 /health）==');
+console.log('== D 路由 handler 冒烟（只读 /health + /team 空态）==');
 {
   const { ctx, seen, emit } = makeCtx({});
   apply(ctx);
@@ -149,6 +155,37 @@ console.log('== D 路由 handler 冒烟（只读 /health）==');
   const bad3 = { statusCode: 0, body: '', writeHead(status) { this.statusCode = status; }, end(body) { this.body = body; } };
   await handler({ method: 'GET', url: '/dsh-agent-org/v1/health', headers: { host: 'evil.example.com' } }, bad3);
   check('非回环 Host 无 Origin → 403（回环防线在位）', () => assert.equal(bad3.statusCode, 403));
+
+  // /team 冒烟（BE-V14-A）：假 org 空态 = team.json 不存在 → 恒 200 + team:null + stats 全 0，
+  // 且零副作用（不建 team.json/team.lock/tmp、不 mkdir 语义外泄）；红线=只读盘不触真盘。
+  const fakeDir = mkdtempSync(join(tmpdir(), 'bev14-selftest-'));
+  const prevEnv = process.env.DSH_AGENT_ORG_PATH;
+  try {
+    process.env.DSH_AGENT_ORG_PATH = join(fakeDir, 'org.json'); // org.json 也不建：roster 空、恒 200 口径下仍可答
+    const team = { statusCode: 0, headers: null, body: '', writeHead(status, headers) { this.statusCode = status; this.headers = headers; }, end(body) { this.body = body; } };
+    await handler({ method: 'GET', url: '/dsh-agent-org/v1/team', headers: { host: 'localhost:5399' } }, team);
+    const parsed = JSON.parse(team.body);
+    check('GET /team（假 org 空态）→ 恒 200 + ok:true + team:null + stats 七键全 0', () => {
+      assert.equal(team.statusCode, 200);
+      assert.equal(parsed.ok, true);
+      assert.equal(parsed.team, null);
+      assert.equal(parsed.error, undefined);
+      for (const k of ['pending', 'ready', 'running', 'done', 'failed', 'blocked', 'total']) assert.equal(parsed.stats[k], 0, `stats.${k} 须恒在且为 0`);
+      assert.ok(Array.isArray(parsed.roster));
+    });
+    check('GET /team 响应头 no-store', () => {
+      const cc = Object.entries(team.headers ?? {}).find(([k]) => k.toLowerCase() === 'cache-control')?.[1];
+      assert.equal(cc, 'no-store');
+    });
+    check('/team 零副作用：假 org 目录不产出 team.json/team.lock/.team.*.tmp', () => {
+      const entries = readdirSync(fakeDir);
+      assert.deepEqual(entries, [], `空态 GET 不得写盘，实际残留：${entries.join(', ')}`);
+    });
+  } finally {
+    if (prevEnv === undefined) delete process.env.DSH_AGENT_ORG_PATH;
+    else process.env.DSH_AGENT_ORG_PATH = prevEnv;
+    rmSync(fakeDir, { recursive: true, force: true });
+  }
 }
 
-console.log(`\n全部通过：${passed} 项断言组，10 工具 × 4 装载路径 + 路由防线 ✓`);
+console.log(`\n全部通过：${passed} 项断言组，14 工具 × 4 装载路径 + 路由防线 + /team 空态冒烟 ✓`);
