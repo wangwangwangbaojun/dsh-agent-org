@@ -89,4 +89,14 @@ R1（基准石三件套=hash+annotated tag+第二副本，自 v0.14 起缺=block
 R2（发布红线 R-LIC·blocker，生效于发布面）：对外发布物必须 LICENSE 文件与 package.json:"MIT" 一致。已挂末波票「README+version 0.14.0」验收项：LICENSE 先落（MIT 文本+版权人名称；版权人须人定，勿代拟——待 lead 人工确定后方可开票执行）。
 R3（验收基线定版）：git archive 纯净树+HOME 隔离+`node --test` 全绿；v0.14 起测试数棘轮只升不降，起点 29/29（评审实测）。
 
+§G 尾部增量裁定入册 No.2（不开冻结面；来源 ARCH-ADJ-2，源件 mtn1o5se-k5xg 代码评审 Q1–Q3 请示，架构师终裁件 mtn7g3wq-sdnz→node-5、lead 落档文本 mtn7f8w3-2kl6，lead 2026-09-05 拼接入册 [mtn1no5k-je02]；生效件执法面=docs/REV-V14-FINAL-CHECKLIST-v2.md @1e6319a §0/§A 白名单合并表，互引一致）
+
+D1（Q1 裁定·允许当修复）：统一原子写原语必须携带失败路径孤儿 tmp 清理——try{写 tmp→rename}catch{尽力 rmSync(tmp,{force:true}) 后原样 rethrow，清理失败不掩盖原错误}。R3「字节级不变」范围就此钉定为**成功路径四项**（字节内容/tmp 前缀/mode/返回值）；saveOrg 失败路径新增清理属修复增强、非回归、不算违 R3（对齐 backupOrg 既有「写失败清孤儿 tmp 后原样 rethrow」家风）。实现护栏：原语按**字节面**收口（签名字节面，saveOrg/team 各自 JSON.stringify 后传入），不得把序列化锁进原语——否则 backupOrg（写原始字节）无法复用、反逼第四套。验收增量（并入 R3 golden，REV 硬门槛）：新增失败路径断言=构造写失败后①原错误照抛②目录内无 `.org.*.tmp` 残留；成功路径字节 golden 照旧全绿。理由：写失败是可重复场景，留 tmp=org 数据目录无上界磁盘泄漏。
+
+D2（Q2 裁定·窄口径确认，豁免+双护栏）：红线绑定对象=配置文档（org.json/team.json）写者。bin/org-role.js:117-121 atomicWriteJson 仅写 daemon 自身状态、R2 grep 锚范围=lib/、§G L79 另裁游标零改动——三点同向，评审窄口径**成立，此件豁免、不构成第四套**。护栏 GQ2-1（blocker）：豁免绑定该实现体现有调用面；v0.14 波次内 org-role.js 若新增任何 tmp+rename 实现体、或其写面扩展至 org.json/team.json，豁免作废即 blocker。护栏 GQ2-2：该件归 v0.15 **ARCH-DEBT-02** 随原语归一；归一后 lib/ 之外任何第二实现体一律 blocker。
+
+D3（Q3 裁定·勘误照准，即 ADD-3）：§G L79 改动文件全集**增补两列**：①**lib/org.js**——改动面限定为 saveOrg/backupOrg 底层原语泛化（tmpPrefix/mode 参数化 + D1 失败路径清理），成功路径字节/前缀/mode/返回值照 R3 锚零偏差；②**test/org.test.js**——saveOrg/backupOrg golden 回归锁落点（tmp 前缀 `.org.<pid>.<ts>.tmp`/`.org-bak.`、backup mode 0600 statSync 实测、keep=5 边界、不存在返回 false、D1 失败路径清理断言；既有版本门用例照绿）。此二文件**范围外**改动仍=越界 blocker，勘误不解禁。理由：ADD-1 强制改 org.js、golden 锁强制落 org.test.js，不勘误则「改面越界即 blocker」与增量裁定自相矛盾。（执法载体：REV-Checklist-v2 §A 白名单 lib/org.js=BE-A 专属 ADJ-2.1 增量、test/** 新文件=ADJ-2.3 非对称规则；golden 承载实测=test/org.test.js @c3af1d1 +6 金样。）
+
+v0.15 债登记确认：ARCH-DEBT-01（client.js/index.js 切分，ADD-2 既有）＋ARCH-DEBT-02（org-role 原语归一，见 D2）＋ARCH-DEBT-03（lib/index.js:160 saveCursor 裸非原子写，架构师盘上复验属实；cursor 丢失可重扫自恢复、S3 定性维持）。三债并册随「不切」裁定，v0.14 不开新票。V14-R 清单 R1–R7 与 D1–D3 相容，即日生效。台账载体=docs/ARCH-DEBT-V15-v1.md（lead 2026-09-05 建账 [mtn1no5k-je02]）。
+
 ---
