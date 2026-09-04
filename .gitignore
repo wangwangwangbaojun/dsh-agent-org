@@ -4,3 +4,14 @@ package-lock.json
 *.tsbuildinfo
 .DS_Store
 .evidence/
+# OPS3-CLOSE C4 卫生残余（评审 S4/S5，OPS-3 关闭后另线）：运行态数据与打包产物不入版本库。
+# 边界：只 ignore 运行态/产物面，test/ 与 lib/ 一律不 ignore（R3 棘轮与门禁挂载依赖 test/** 可入库）。
+*.tgz
+.env
+.env.*
+org.json
+org.json.bak*
+roles.json
+runner-state.json
+state.json
+*.jsonl
