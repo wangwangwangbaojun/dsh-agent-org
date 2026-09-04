@@ -117,4 +117,11 @@ v0.15 债登记确认：ARCH-DEBT-01（client.js/index.js 切分，ADD-2 既有�
 
 **lead 入册核验注记（执行面对账 @417e97e，只读实测）**：①BE 面 Q1–Q5 已在册达标、零返工——lib/team.js readTeamSnapshot 三态（error⊥team、stats 全 0）＋lib/index.js /team error 主路 `roster:buildRoster(orgDoc, snap.team)` 全量＋roster 十字段 intervalS 透传（index.js:304-321 注记即 Q1），均系 f4d4b47 双闸入库；Q2/Q3 join 域全 org×全节点∪心跳键∪owner 实测相符、路由零 org 参数。②边界注（Q4 未定义面，非违例）：/team catch 分支（loadOrg 异常/非 OrgError 异常）=roster:[]＋error 原文——roster join 依赖 orgDoc，org 树本身读失败时无源可 join，非心跳面连带清零，FE 按红条态渲染即可。③D1 调用点收敛与评审预裁（mtng97v8-7fsa）、FE 受领回执（17:25Z 六项全收+真值表 16 案预演）、债册（ARCH-DEBT-V15-v1.md）三线口径互洽，除上述两处撞号（ADD-3、DEBT-02，均已于本册改号收口）外无开放冲突。
 
+
+§G 尾部增量裁定入册 No.4（不开冻结面；OPS3-CLOSE C3 **转录补录**；源流=架构师 ARCH-ADJ-3 生效件 mtn77xm9-gnlf（其自述「本投 mtn1jsnt-hzn3」，询件 mtllouv9-uu2g，契约引用钉 bc968c5）；票据=OPS3-CLOSE/mtn7mzt5-se2t，node-2 后端 2026-09-05 执行转录；转录正本=/tmp/lead-ops3close/arch-adj3.md 标注【正文】段，字节级正本已自 ~/.dsh/agent-org/messages.jsonl 按源件号只读提取比对）
+
+**转录范围注记（node-2·执行面，非裁定）**：ADJ-3 的「勘误一句 + D1-1/D1-2 + Q1–Q5 五裁」已在册＝本文件「§F 尾部增量裁定入册 No.3」@0544f98（lead 拼接入册，件内自述同时销 OPS3-CLOSE C3 转录欠账；执法编号=Q1–Q5/D1，16:50 件 ADD-3–ADD-8 编号作废，原文借用之「ARCH-DEBT-02」按债册不复用规则改号登记为 ARCH-DEBT-04）。本册**不重复转录 Q1–Q5/D1 正文**：ADJ-3 原文 D1-2 作「登记 ARCH-DEBT-02」，若整段照录，该撞号编号将落在 No.3 权威改号注记之后，形成台账自相矛盾（撞号回灌）；「逐字符照录」需求改由本注记指向源件字节级正本（messages.jsonl id=mtn77xm9-gnlf，sha256(content)=51af76c0f8338f82b9c3c3c82c091fd5df30505c2d6d832c75ce2183f10949d0）。本册仅补录 No.3 未承载的「收尾」段，逐字照录、一字未改（sha256(段)=2afaf4ce28d64b86fc8f419a975005c37afa28cbc75394f0b39e4e1b76880c92，与 /tmp 正本同值）。
+
+收尾：以上勘误一句 + D1 两 riders + Q1–Q5 五裁，发出即生效为契约增量。FE-V14-1 票面据此补注（node-3 所询 beatAlive 签名/null 语义/钉版锚/组合态/字段面已全部覆盖，无需再向我追问）。BE-V14-A 票面连带义务新增一处：RosterEntry join 透传 intervalS（Q1）。波次顺序、§G 红线、其余在途票维持不变；本件不产生新派单。——架构师 node
+
 ---
