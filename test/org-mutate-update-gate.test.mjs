@@ -24,8 +24,9 @@
 //   是 A2 磁盘写入的前置回声（pre-fix 下盘上仍为 '执行'），实测 c162805 成第 7 个派生红案，违反上句契约；
 //   已改为「自给基线 + 纯不变式」两形态（另：纯快照形态会被更早的 A3 部分 patch 预先清空基线而失明，QA 变异实测）。
 //
-// 口径钉版说明（lead 裁定②）：tool schema 注 maxTokens 1..64000，org.js 实容 1..1_000_000，
-//   该口径差不入 v0.14；故 B2 只取两口径之外的 99_999_999 做越界断言，不在 64000/1e6 边界钉版。
+// 口径钉版说明（lead 裁定②；V15-C/H-C2 已收口）：maxTokens 唯一真值源 = org.js LIMITS.maxTokens=1..1_000_000，
+//   tool schema 自述现为 `1..${LIMITS.maxTokens}` 模板串（旧硬编码副本 1..64000 已消灭，数值全等锚
+//   由 test/toolface-selfdesc.test.mjs G2 承载）；故 B2 仍取全域非法的 99_999_999 做越界断言，不在 1e6 边界钉版。
 //
 // 隔离（lead 验收④）：DSH_AGENT_ORG_PATH 重定向到 mkdtemp 临时目录，绝不触碰 ~/.dsh/agent-org 生产盘。
 // 运行：npm test（= node --test）自动计入；同文件内顶层用例按声明顺序串行执行。
