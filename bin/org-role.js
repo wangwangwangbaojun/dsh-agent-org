@@ -214,19 +214,20 @@ function neutralizeControlTokens(text) {
     .replaceAll('[任务失败', '［任务失败');
 }
 
-/** §D3 上次成果摘要：首选 team.json 本 owner 最近 done 任务；次选本节点最近发出 [任务完成 邮件；皆无=空串。 */
+/** §D3 上次成果摘要：首选 team.json 本 owner 最近 done 任务；次选本节点最近发出 [任务完成 邮件；皆无=空串。
+ *  §D4 纪律同覆成果段：summary/邮件正文均为外部可写材料，注入前一律控制符全角化（注入段永不成为指令源）。 */
 function lastOutcomeLine() {
   try {
     const doc = loadTeamDoc(orgPath());
     const done = (doc?.tasks ?? []).filter((t) => t.owner === SELF_ID && t.status === 'done' && t.summary);
     if (done.length > 0) {
       const last = done[done.length - 1];
-      return `- 上次成果（团队任务 ${last.id}）：${String(last.summary).slice(0, TEAM_OUTCOME_MAX)}`;
+      return neutralizeControlTokens(`- 上次成果（团队任务 ${last.id}）：${String(last.summary).slice(0, TEAM_OUTCOME_MAX)}`);
     }
   } catch { /* 团队面缺失/损坏/高版本 = 保底注入降级走邮件路径，非错误（§G 兼容红线） */ }
   try {
     const mine = loadJsonl(messagesPath()).filter((m) => m.from === SELF_ID && typeof m.content === 'string' && m.content.startsWith('[任务完成'));
-    if (mine.length > 0) return `- 上次成果：${String(mine[mine.length - 1].content).slice(0, TEAM_OUTCOME_MAX)}`;
+    if (mine.length > 0) return neutralizeControlTokens(`- 上次成果：${String(mine[mine.length - 1].content).slice(0, TEAM_OUTCOME_MAX)}`);
   } catch { /* 邮件不可读 = 该段不出 */ }
   return '';
 }
