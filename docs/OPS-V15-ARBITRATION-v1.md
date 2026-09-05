@@ -3,6 +3,7 @@
 > 作者=架构师 node；日期=2026-09-05。纯设计不落码：本书不写 bin/org-role.js、不解锁实施；实施票由 lead 依本书另开。
 > 认版锚（我发信时点实测，发信即失效按新规重取）：HEAD=`6c9a8a6`；冻结面零漂移——`bin/org-role.js` 盘≡HEAD blob `a4ae657`，sha256=`0088de60e8f5…27674fd7`、388 行，docs/、test/ 零变更；porcelain=**BE-A1 在途两件**（`M lib/org.js`、`?? lib/team.js`，v0.14 线合法在途，非漂移，本书发信时点正在发生）；`npm test` 地板=65/65@净树（R3 棘轮起点，在途件未合前以最近净树数为准）。
 > 本文行号一律为 **@6c9a8a6 锚定行号**；BE-V14-B 入库会推移行号，实施票落票时改用「语义锚」（各 hunk 附 grep 式），行号仅作导引。
+> **v1.1 ADJ-OPS15-B5 裁定补录（2026-09-05，源= node-2 门禁停手回报 mtneyj92-vabi）**：应 §9-F2「异议先回架构师裁定后改书」协议，就地 amend 三处——§7-B5 真空门禁三档改写、§5-H-B4 增 `groupkill=` 实测字段、§4-H-A3 注锚分层；其余条款零改动。新见证锚 @HEAD=`1af78e8`：`bin/org-role.js` 对 BE-V14-B（2800f28）入库后形态=blob `dca9c3d5`/sha256 `0a690458…`/481 行——`0088de60`/388 行自此仅作 §4 层A 历史锚，施工基线一律取 BE-V14-B 后形态（§8.2 既有裁定兑现）；§7-G1 棘轮地板亲测刷新 = `npm test` **137/137** + mount-selftest 18 断言组 + 跑后 porcelain 空 @1af78e8。
 
 ---
 
@@ -75,7 +76,7 @@ claim 的「检查→写」之间存在同步竞态窗（OS 级抢占），需�
 |---|---|---|---|
 | H-A1 | `spawn detached:true` + 动机注释（2+1 行） | **原样吸收** | 组杀前提；输入③三实样实证生效 |
 | H-A2 | `finish()` 体内组杀 `process.kill(-child.pid,'SIGKILL')` | **原样吸收** | **增补 A1 另行**：finish 内 `settled=true` 后加 `clearTimeout(timer)`。现 MAX_OUTPUT→finish 路径 timer 滞留至 900s 期满，届时对 `-pid` 补刀有低概率高危的 PID 复用面 + 事件循环多持 900s。此为 OPS-V15 新 hunk（§5-H4），**非层A 重做** |
-| H-A3 | 超时 timer 组杀双保险 + 报文「（组级）」标记 | **原样吸收** | 「（组级）」字样为在验收 grep 锚（§7-B5），禁删 |
+| H-A3 | 超时 timer 组杀双保险 + 报文「（组级）」标记 | **原样吸收** | 「（组级）」字样为在验收 grep 锚（§7-B5a，文本存在性），禁删。**v1.1 ADJ-OPS15-B5**：该锚语义=模板存在性防护，不证组杀发生（node-2 变异体 B 实证：防线全摘回投仍自称「（组级）」，字样系 `:185` 模板硬编码零耦合）；活性判据另立 §7-B5b/B5c。**H-A2/H-A3 双处冗余裁定=均保留、禁合并**（层A 零重做冻结面本就禁改写；单点摘除不必炸红=设计冗余非缺陷，变异判据绑「同摘」——见 §7-B5c） |
 | H-A4 | MAX_OUTPUT 越限改走 `finish()`（截断即定性回投，不吊 close） | **原样吸收** | 语义正确；stdout 头部 4000 字保留口径不动 |
 | （卫生） | `.gitignore` +2（package-lock） | 已随 2f30d58 入库 | 不重复处置 |
 
@@ -100,7 +101,7 @@ claim 的「检查→写」之间存在同步竞态窗（OS 级抢占），需�
 - **H-B1**（锚：`const finish = (value) =>`）：finish 内 `clearTimeout(timer)`（A1）。1 行。
 - **H-B2**（锚：`child.kill('SIGKILL')` 两处）：pid 守卫——`detached` 且 `Number.isInteger(child.pid)` 才组杀；`child.pid` undefined（spawn 同步失败）只走子体守卫。≈3 行。
 - **H-B3**（锚：`let child`→模块级 `let activeChild`；`process.exit(0)` 前注册 `process.on('exit', …)`）：**外部信号/异常退出路径组杀**（A2 补全，node-5 mtn6v8u8 项①）——daemon 经 `main().catch`/exit 死亡而子代在飞时，exit 钩子同步组杀 activeChild（detached 子树已独立成组，现形会成孤儿组）。≈5 行。
-- **H-B4** 超时取证强化：超时回投/报告行改携 `elapsed=…s; stdout=…B; silence=…s; tail=「stdout 尾 ≤1000 字」; stderr 摘要：…`（保留「（组级）」字样锚）；新增 70% 软警 report 行（`type:'run', action:'timeout-warn'`）。≈10 行。**RUN_TIMEOUT_S 默认 900 不改**。
+- **H-B4** 超时取证强化：超时回投/报告行改携 `elapsed=…s; stdout=…B; silence=…s; tail=「stdout 尾 ≤1000 字」; stderr 摘要：…`（保留「（组级）」字样锚）；新增 70% 软警 report 行（`type:'run', action:'timeout-warn'`）。≈10 行。**RUN_TIMEOUT_S 默认 900 不改**。**v1.1 ADJ-OPS15-B5 增项**：超时报文再携 `groupkill=` 实测结果字段，取自组杀 try/catch 之 errno 分类——`signal_sent`（信号确发给活组）/ `already_gone`（ESRCH，组已没了）/ `err:<code>`（其余）；组杀调用点由两处 try 各归集、以先到终态者入报文。此项把「（组级）」从**硬编码自称**升级为**运行时实证**，根除 node-2 变异体 B 暴露的「文案说谎」面（防线摘除后文案不变的病根）。≈3 行增量，锚字面与既有前缀格式零冲突（R-1 红线不受触——改的是 `runHeadless` 返回体文案，非 `[任务完成/失败 id]` 报文前缀）。
 - 测试：`test/timeout-forensics.test.mjs`（短超时 stub：断言 finish 后 timer 回调不再触发 kill（spy）、ENOENT stub 无 `kill(-undefined)`、退出钩子后 stub 子组消亡、超时报文含三取证字段）。
 
 ### V15-C｜工具面自述门禁补全（AC-A4 残余面；文件域：lib/org.js + lib/index.js + test/；与 V15-A/B **零文件交集，可并行**）
@@ -152,7 +153,10 @@ RC 分型与取证映射：
 - B2 pid 守卫：ENOENT stub 令 spawn 同步失败 → spy 断言从不出现 `process.kill(-undefined)`/`kill(-NaN)`。
 - B3 exit 钩子：子代 stub 存活中令 daemon 走非 SIGKILL 异常退出 → 子组整体消亡（pgrep -g 零）。
 - B4 取证强化：超时回投含 elapsed/stdout 字节数/silence/tail 四要素；70% 软警行在 reports 可检出；`RUN_TIMEOUT_S` 默认值 900 未变。
-- B5 「（组级）」锚仍在：`grep -c '（组级）' bin/org-role.js` ≥ 1。
+- **B5（v1.1 ADJ-OPS15-B5 三档重写）** 组杀防线验收入口分三档，**V15-B 合入判据 = B5a∧B5b∧B5c，B5a 单独不作数**（原「grep ≥1 即过」经 node-2 变异体 B 证伪为真空门禁，废除单档放行）：
+  - **B5a 文本存在性锚（降级保留）**：`grep -c '（组级）' bin/org-role.js` ≥ 1（护取证模板禁删，**不**证明组杀发生）；附加结构锚 `grep -c 'process\.kill(-' bin/org-role.js` ≥ 2（单点回归防护，H-B2 pid 守卫改造后形态随动重钉）。
+  - **B5b 单元活性锚（新增必含）**：`test/timeout-forensics.test.mjs` 内以 preload spy 拦截 `process.kill`——Node v22 实测可行：`NODE_OPTIONS='--import=file:///…kill-spy.mjs'`（shim 读 `DSH_KILLLOG` 环境变量，把每次调用 `[arg1,arg2,errno]` 以 JSON 行落文件；NODE_OPTIONS 自动透传 selfRestart 后代）；假组织+假 npx 下 `--timeout` 逼超时，断言存在 ≥1 次调用 **arg1 === `-child.pid`（负整数）且 arg2==='SIGKILL'**；与 B1/B2 共用同一 shim 基建（B1 的「timer 回调零触发」与 B2 的「never kill(-undefined)」同为本 spy 的断言面）。
+  - **B5c 端到端活性锚（新增必含）**：node-2 `/tmp/ops15-negctl` 骨架固化为常备测试（假组织+假 npx 同进程组派生孙进程+短超时）：判据=超时后孙进程 `kill -0` 判死 **且** 组 pgid 内存活计数=0。**自带反向变异自检（本档即门禁）**：测试内部在临时副本（/tmp，业务树零触碰）上摘除**全部**组杀点（=变异体 B 形态）跑同一判据，**必炸红**（孙进程 ALIVE）方可放行——自检不过=B5c 失明，视同 V15-B 不绿。库内先例=0e1fe73 TC5 变异回植「绿非空转」范式。单点摘除（变异体 A）**不要求**炸红：H-A2/H-A3 为设计冗余（close→finish 兜底），判据只绑同摘，禁止把单点必红写成验收（不可达锚）。
 
 **V15-C**
 - C1 `grep -n 'export const LIMITS' lib/org.js` 命中；`grep -n '64000' lib/index.js` = 0。
