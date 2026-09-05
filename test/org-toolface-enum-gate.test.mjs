@@ -43,14 +43,31 @@ const srcIndex = readFileSync(join(LIB, 'index.js'), 'utf8');
 const srcOrg = readFileSync(join(LIB, 'org.js'), 'utf8');
 const { EDGE_KINDS } = await import(join(LIB, 'org.js'));
 
-// org_mutate 的「自述面」= name/description/parameters 区段（schema 止于 output:，不含 execute 实现体）
-const selfFace = (() => {
-  const start = srcIndex.indexOf("name: 'org_mutate'");
+// org_mutate 的「自述面」= name/description/parameters 区段（schema 止于 output:，不含 execute 实现体）。
+// parameters 双形态适配（BUG-V14B-4 上提 ORG_MUTATE_PARAMS 为模块级常量，node-4 门禁补丁 mtnlslc4-uph9）：
+//   a) 内联形 parameters: {…}（旧）；b) 上提形 parameters: IDENT（新）→ 按 const IDENT = {…} 平衡括号
+//   切块并回自述面。失明型假绿禁止：G0 以两形态样张各验一处（手法与 G2 提取器自检同源）。
+// 判据本身不变，仅锚点从「区段内联文本」改为「区段文本 ∪ 其引用的常量定义」。
+function selfFaceOf(src) {
+  const start = src.indexOf("name: 'org_mutate'");
   assert.ok(start >= 0, 'org_mutate 工具定义存在');
-  const end = srcIndex.indexOf('output:', start);
+  const end = src.indexOf('output:', start);
   assert.ok(end > start, 'org_mutate schema 段（output: 之前）可界定');
-  return srcIndex.slice(start, end);
-})();
+  let face = src.slice(start, end);
+  const hoist = face.match(/parameters:\s*([A-Za-z_$][\w$]*)\s*[,}]/);
+  if (hoist) {
+    const decl = new RegExp(`const ${hoist[1]}\\s*=\\s*\\{`).exec(src);
+    assert.ok(decl, `org_mutate parameters 上提为常量 ${hoist[1]}，但模块级定义不可见（悬空引用，自述失去真值源）`);
+    let depth = 0, j = decl.index + decl[0].length - 1;
+    for (; j < src.length; j++) {
+      if (src[j] === '{') depth++;
+      else if (src[j] === '}') { depth--; if (depth === 0) break; }
+    }
+    face += '\n' + src.slice(decl.index, j + 1);
+  }
+  return face;
+}
+const selfFace = selfFaceOf(srcIndex);
 
 // 契约表：字段 → 域层合法值集（导出常量）。新增枚举字段时在此加行，即为「以静态断言钉死」。
 const ENUM_CONTRACTS = [{ field: 'kind', domainValues: EDGE_KINDS, tokenRes: /\b(?:collab|dotted[a-zA-Z-]*)\b/g }];
@@ -64,10 +81,16 @@ function toolEnums(face) {
 }
 
 // G0 提取器自检：防「正则失明 → 恒真好门禁」的元缺陷
-test('G0 提取器自检（enum 提取与自述面界定非空）', () => {
+test('G0 提取器自检（enum 提取与自述面界定非空；parameters 内联+上提双形态各须可解析）', () => {
   const enums = toolEnums(selfFace);
   assert.ok(enums.size >= 2, `自述面应至少含 op/kind 两个 enum，实测 ${enums.size}：${[...enums.keys()]}`);
   assert.ok(enums.has('kind'), 'kind.enum 可提取');
+  // 双形态样张自检（BUG-V14B-4 补丁随附）：缺任一形态=提取器失明=本门禁作废，失明型假绿禁止
+  const enumBody = `op: { type: 'string', enum: ['add', 'update'] }, kind: { type: 'string', enum: ['collab', 'dotted'] }`;
+  const inlineSrc = `const t = [{ name: 'org_mutate', description: 'd', parameters: { type: 'object', properties: { ${enumBody} }, required: ['op'] }, output: s }];`;
+  const hoistSrc = `const P = { type: 'object', properties: { ${enumBody} }, required: ['op'], additionalProperties: false };\nconst t = [{ name: 'org_mutate', description: 'd', parameters: P, output: s }];`;
+  assert.ok(toolEnums(selfFaceOf(inlineSrc)).has('kind'), 'G0 提取器自检：内联形 parameters 样张必须可解析（旧形回退隐身即失明）');
+  assert.ok(toolEnums(selfFaceOf(hoistSrc)).has('kind'), 'G0 提取器自检：上提常量形 parameters 样张必须可解析（新形不可见即假绿）');
 });
 
 // G1a §G 条款主断言：契约表内字段的工具面 enum ⊆ 域层合法值集
