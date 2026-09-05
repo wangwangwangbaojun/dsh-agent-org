@@ -2,6 +2,7 @@
 
 > 评审侧文件（node-5 代码评审），非波次 diff、不入任何波次 commit。
 > 证据三点套（定版时点）：核查 2026-09-04T19:20Z ± ｜HEAD=bf762afffaa49de78ae18660dfc3349ba889f64b｜本文件 sha256 以入库/回投时点 blob 复算为准。
+> **v2.1 勘误注记**（2026-09-05T01:21Z｜复算 HEAD=609885582378955817afee91c692973c9eb85902，porcelain 0）：依仲裁函 mtndupyc-vix0（ADJ-4.1/ADJ-4.2 勘误裁定；定性=账面已结、无需回滚任何已发评审结论）就 **B-4①/B-4④** 两处以校正读法就地注记，执法面既生效文本不因注记号改变（勘误仅消字面自相矛盾之假 blocker）；R-ADJ2-CLOSE（§G No.5 件）口径防混淆注随 B-4④ 随册。§G 尾部 ARCH-ADJ-2/ADJ-4.1/ADJ-4.2 入册随 lead 统一操作，非本件义务。
 > 本件**取代** REV-V14-Prep 中间版 1/3–3/3 中「lib/org.js、LICENSE、test/** = blocker 待裁定」全部预留条款；其余条目继续有效并并入本件。
 > 依据文档：docs/ARCH-V14-CONTRACT.md @f81ab6b（blob cb396c9f）含 §G@bc968c5 + ARCH-ADJ-1 增量在册；ARCH-ADJ-2（本定版源件，node→node-5，§G 尾部入册随 lead）；ARCH-ADJ-3（Q1/Q4/Q5 邮件终裁，f4d4b47 message 在案）；lead 口径终裁 mtmwh4l3-uhbh；ARCH-ADJ-R1 断言纪律 G1–G4；G-ATTR-1/2；《验收证据规范》三点套 + 行号钉 commit 惯例。
 > 通用纪律：一切行号引用附 commit 锚（@<sha>）；一切对账用 **blob 谱系**（`git show <commit>:<path> | sha256sum`），盘 sha 只作同时点证据不作后续锚。
@@ -51,10 +52,13 @@ docs/ 下评审/QA/台账文档属评审侧留痕，不入波次 commit、不计
 
 **B-4 ADJ-2.1 范围锚四条（lib/org.js 专属）**：
 - ①改动面 = saveOrg 签名 + 其 tmp 行区域（锚 `git show 2f30d58:lib/org.js` @558-564，已实测在位）；仅允许新增可选第三参 opts.tmpPrefix；
+  **ADJ-4.2 勘误注记（v2.1，函 mtndupyc-vix0）**：字面「仅允许新增 opts.tmpPrefix」会把 ADD-1 红线自身的落点——泛化原语导出——判为锚外，与 P4 预验 PASS 自相矛盾。校正后许可面 = **saveOrg 签名 + 其 tmp 行区域 + 同一 hunk 内新增 atomicWrite/tmpNameFor/TMP_PREFIX_RE 导出**；其余锚不变（B-4② 调用点零 diff、B-4④ 其余区域 '-' 行=0、B-3④ 缺省字节等旧），终审对最终树按校正后锚执法。评审侧复算 @6098855：lib/org.js `:589 export const TMP_PREFIX_RE` / `:592 export function tmpNameFor` / `:599 export function atomicWrite` / `:611 export function saveOrg(path, doc, opts = {})`——相对函内快照 581/584/591/603 整体 +8 行号漂移，漂移源=在册票 7864536 于 org.js 前段另增 update 零键门（+26/-2），非白名单违例；符号锚稳定，行号锚终审按最终树复钉。
 - ②既有 5 调用点 lib/index.js:530/552/616/727/765（锚 @2f30d58，已实测逐一吻合、均位置参）对波次 diff 零行——复核：`git diff 2f30d58..HEAD -- lib/index.js | grep -E '^[+-].*saveOrg\('` → **0 命中（预验 PASS @bf762af）**；
 - ③见 B-3；
-- ④org.js 其余区域（validate/prepareDoc/mutate/loadOrg/backupOrg）'-' 行数=0（预验 PASS @f0f40ed：单 hunk @@-555,12+555,38@@，5 枚 '-' 行全在 saveOrg 函数体；backupOrg 显式不在范围）+ test/org.test.js 零 diff + npm test 全绿。
+- ④org.js 其余区域（validate/prepareDoc/mutate/loadOrg/backupOrg）'-' 行数=0（预验 PASS @f0f40ed：单 hunk @@-555,12+555,38@@，5 枚 '-' 行全在 saveOrg 函数体；backupOrg 显式不在范围）+ test/org.test.js 零 diff（**ADJ-4.1 勘误读法，见下注**：作「基线 13 枚声明（@2f30d58）零删除、零放宽」解）+ npm test 全绿。
   test/org.test.js 计数口径**勘正**：@2f30d58 实测 = 13 枚 test 声明（12 顶层 + 1 循环内生成 :17；**无** `t.test(`；ARCH-ADJ-2 信内「12 顶层+1 嵌套 t.test」分解口径系笔误，总数 13 不变、与本评审原 13 条吻合）。复算配方：`git show <tree>:test/org.test.js | grep -cE '^\s*(test|await t\.test)\('`。
+  **ADJ-4.1 勘误注记（v2.1，函 mtndupyc-vix0）**：B-4④「零 diff」字面执行与 B-10①/B-3④ 自相矛盾——c3af1d1 已向 org.test.js 新增 6 枚 golden（恰为 B-3④ tmpNameFor 格式锁之承载），字面零 diff 将 blocker 掉已入库且预验 PASS 的波次。裁定读法=**基线 13 枚声明（锚 @2f30d58）零删除、零放宽**；新增用例按 B-10① 非对称规则执法。增补复算配方=计数配方 **≥13**，且 `git diff <base>..<head> -- test/org.test.js` 之 '-' 行仅允许非断言行（import/头注）。评审侧亲算 @6098855（porcelain 0）：2f30d58=13 → HEAD=19（+6=c3af1d1 [BE-V14-A/mtn0evg2-24fc] golden）；2f30d58..6098855 '-' 行恰 2 枚=2 行 import 扩充（node:fs 头行 + lib/org.js 头行），基线 13 声明零触碰 → **合规，c3af1d1 该项不记红**；顺带复算 B-4② `git diff 2f30d58..6098855 -- lib/index.js | grep -E '^[+-].*saveOrg\('` = 0 命中 ✓。
+  **口径防混淆注（R-ADJ2-CLOSE §一.2 随册）**：org.test.js **静态口径 13**（@2f30d58；=12 顶层+1 循环内 :17，该循环运行时展开 7 用例）≠ **npm test 运行时计数贡献 19**——B-4④ 静态配方与 B-9 棘轮运行时计数系两个口径，后世读者**禁互引**。
 
 **B-5 v0.13 等价红线**：team.json 缺失 = 所有新 hook try/catch no-op = 全路径字节级等 v0.13、零写盘。复核=隔离盘冒烟（假 org 无 team.json → /team 200 空态、目录零新文件）。
 
@@ -122,7 +126,7 @@ lead 口径终裁（mtmwh4l3）入案：op=update 空 patch = 不抛错、「已
 | OG-3 | LICENSE 未落 + 版权人未定（R2 前置：未定则末波不开） | 末波（lead） | OPEN（前置未满足） |
 | OG-4 | BE-V14-B（bin/org-role.js tickTeam/hooks/注入）未落；现 bin/org-role.js 盘≡HEAD 零脏 ✓ | BE-B | 未开始 |
 | OG-5 | §G 边界条件 15+ 项 → 在树测试承载对照表未交 | QA-V14 + 各波 | OPEN |
-| OG-6 | 在途 M test/org.test.js / M lib/team.js 待其票 commit 后按 B-10①/B-2 终判 | 在途票 | 观察中 |
+| OG-6 | 在途 M test/org.test.js / M lib/team.js 待其票 commit 后按 B-10①/B-2 终判 | 在途票 | **CLOSED @2026-09-05**：team.js 面=f4d4b47/7b765e3 入史，B-2 双 0 锚按 P7 口径成立；org.test.js 面=c3af1d1 入史，按 ADJ-4.1 校正读法终判=合规不记红（终审亲算见 B-4④ v2.1 注）；现盘 porcelain=0 @6098855 |
 
 ## 附录三：中间版 → 定版 delta
 
