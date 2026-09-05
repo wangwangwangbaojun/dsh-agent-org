@@ -13,10 +13,10 @@
 //   关票通告曾引「19 案」亦误，HEAD 实测恒为 18。实构成为：源脚本 17 案 + 评审补案 1 案 + V14B-FIX2 补案 5 案）：
 //   源脚本 17 案（A1 A2 A3 A4 A4b B1 B2 B3 B4 C1 C2 C3 C4 C5 C6 C7 D1），
 //   外加评审补案 A5（代码评审意见 mtlk6288-eanw，四象限(c) patch非replace 唯一缺口，后插于 A4b 之后，不在源脚本编号集内），
-//   外加 V14B-FIX2 补案 5 案（评审函 mtncm3m3-hyzg 建议①②③：S1a/S1b/S1c/S2/S3，后插于 D1 之后）：
+//   外加 V14B-FIX2 补案 5 案（评审函 mtncm3m3-hyzg 建议①②③ + ADJ-V14B-MODEL 终裁 603c6df 修订形态，后插于 D1 之后）：
 //   A 组 = update 落盘对账（本票修复面）；B 组 = 校验防线不被绕过 + 报错路径零落盘；
 //   C 组 = 其余 op（add/move/addEdge/removeEdge/layoutAll/delete）零回归；D1 = 数据文件隔离；
-//   S 组 = V14B-FIX2 补面（model 形状归一化 / maxTokens null 复位 / args.org 跨 org 定位）。
+//   S 组 = V14B-FIX2 补面（model 形状 B 终态锁 / maxTokens null 复位 / args.org 跨 org 定位）。
 //   全部断言走「工具面调用 → 磁盘回读对账」，不信返回值文案。
 //   A4 为固化时的真断言改造（lead 裁定③）：源脚本里 check(..., async () => {}) 恒真；
 //   固化初期判「不抛错 + 返回成功前缀 + 磁盘逐字段零变化」；后经 lead 票 mtnb4jm0-td72 换钉
@@ -263,18 +263,29 @@ test('D1 全程数据文件只落在 mkdtemp 临时目录（生产盘零接触�
 });
 
 // ============ S. V14B-FIX2 补面（评审函 mtncm3m3-hyzg 建议①②③；team 票 v14b-fix2-impl） ============
-// S1 = 工具边界 model 形状归一化：string→{model}、对象原样透传、undefined 零触碰（防 replace 化）；
+// S1 = model 形状 B 终态锁（ADJ-V14B-MODEL 终裁 603c6df：schema 三键对象即法、工具边界 string 响亮拒；
+//      lead 规格函 mto90y8p-8kmk 的「typeof string→{model}」归一化段被终裁驳回不落地——静默清空病已由
+//      sanitizeModel fail-fast 更严格治愈，重开门槛=工具面旧调用方在盘实证，候证另票复议）：
+//   S1a = 工具面 update model:string 必抛 + 盘零写入——bugv14b-model-shape 案3 锚工具×add 面、案4 锚
+//         域层×update 面，本案补齐「工具×update」交叉空位，五面一致在 gate 侧的执法点；
+//   S1b = 对象原样透传（工具边界不包裹不破坏）；S1c = undefined 零触碰（防未来 replace 化）。
 // S2 = maxTokens 显式 null 复位承诺固化（schema「integer … or null (= default)」）；
 // S3 = args.org 跨 org 定位：显式指定非 active org 的 update 落目标 org，默认 org 字节零漂移。
-// 双向证据契约（lead 规格函 mto90y8p-8kmk 红绿契约）：修复前 HEAD 必红案=S1a——现 HEAD（f06d9d6）
-//   上 string 入参经 sanitizeModel fail-fast 响亮抛（BUG-V14B-1 把旧「静默吞 {} 仍报成功」升格，
-//   评审函记的「清空为 {} 返成功」系 6a6e8ae 时点形态），两种形态同违「归一化落盘」承诺，同判红；
-//   S1b/S1c/S2/S3 系既有行为固化案，修复前后同绿。落 S1 归一化后 23/23 全绿。
+// 双向证据契约（红绿双对，全部留证 .evidence/v14b-fix2/）：
+//   对规格函版归一化树 b7735e7：S1a（终态锁形态）必红——那棵树放行 string 经 {model:s} 成功落盘；
+//   对终裁合规树（归一化段剔除后）：23/23 全绿。
+//   历史在案：规格函版契约首跑红集恰={S1a}（归一化案红@f06d9d6，形态=sanitizeModel fail-fast 抛，
+//   非 6a6e8ae 时点的「静默清空 {}」，BUG-V14B-1 已升格）——后被终裁推翻，翻为终态锁形态。
 // 目标节点=新丁2（added2Id，C6 后仍在盘）；S3 走 SEED 第二组织 org-b。磁盘回读口径，不信返回文案。
 
-test('S1a update model:string 归一化落盘 → 盘上 {model:"deepseek-v3"}（V14B-FIX2·S1·修复前必红案）', async () => {
-  await mutateTool.execute({ op: 'update', id: added2Id, model: 'deepseek-v3' });
-  assert.deepEqual(diskNode(added2Id).model, { model: 'deepseek-v3' }, 'string model 未归一化为 {model:string}（修复前形态：sanitizeModel 抛/旧版静默吞 {}）');
+test('S1a update model:string 工具边界必响亮拒 + 盘零写入（V14B-FIX2·S1·ADJ-V14B-MODEL B 终态锁）', async () => {
+  const before = JSON.stringify(disk());
+  await expectThrows(
+    mutateTool.execute({ op: 'update', id: added2Id, model: 'deepseek-v3' }),
+    /model 必须是对象/,
+    'S1a·工具面 update 放行了 string model（B 终态=响亮拒，归一化猜测候证另票）',
+  );
+  assert.equal(JSON.stringify(disk()), before, 'S1a·抛错路径盘字节零变化契约（throw 先于 saveOrg）');
 });
 
 test('S1b update model:object 三键（fallback:null）原样透传 → 盘上 {provider:"p",model:"m"}（V14B-FIX2·S1）', async () => {
