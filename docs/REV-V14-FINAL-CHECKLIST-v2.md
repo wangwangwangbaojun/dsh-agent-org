@@ -3,8 +3,9 @@
 > 评审侧文件（node-5 代码评审），非波次 diff、不入任何波次 commit。
 > 证据三点套（定版时点）：核查 2026-09-04T19:20Z ± ｜HEAD=bf762afffaa49de78ae18660dfc3349ba889f64b｜本文件 sha256 以入库/回投时点 blob 复算为准。
 > **v2.1 勘误注记**（2026-09-05T01:21Z｜复算 HEAD=609885582378955817afee91c692973c9eb85902，porcelain 0）：依仲裁函 mtndupyc-vix0（ADJ-4.1/ADJ-4.2 勘误裁定；定性=账面已结、无需回滚任何已发评审结论）就 **B-4①/B-4④** 两处以校正读法就地注记，执法面既生效文本不因注记号改变（勘误仅消字面自相矛盾之假 blocker）；R-ADJ2-CLOSE（§G No.5 件）口径防混淆注随 B-4④ 随册。§G 尾部 ARCH-ADJ-2/ADJ-4.1/ADJ-4.2 入册随 lead 统一操作，非本件义务。
+> **v2.2 预裁入位注记**（2026-09-05｜函 mtng97v8-7fsa，lead→node-5，定性=台账前置入位、非派活）：FE-V14-1 评审票面**不得**以「既有 lastBeat 调用点一并收敛」为合入前置或开 blocker；调用点收敛如需做=另立行为等价机械票排后置波次（排期权归 lead；在账承载=**ARCH-DEBT-04** @docs/ARCH-DEBT-V15-v1.md:24，v0.15）。D1 口径复核一致：beatAlive() 模块级、函数体逐字=ARCH-ADJ-3 D1-1 规格、仅供团队 Tab；本评审验收锚照旧=**函数体与规格逐字符 diff 空＋钉点注释在 diff 内**（D1-1 规格与「与 lead 预裁 mtng97v8-7fsa 一致」互引句均已在契约册 :116 blob 谱系在树，@3b473c1 亲验）。「勿再发明」=阈值**语义**唯一、从来非调用点唯一（契约册 D1 原文），与 B-6 在役面零触碰（其余四 Tab 零改动）无交叠歧义——双向同钉：三内联对 FE 波 diff 零行是执法项，「未收敛」不是失分项。现盘对账 @3b473c1：lib/client.js lastBeat 三内联在位 L1039/L1094/L1290（对 @2f30d58 锚零漂移）、`beatAlive` 于 client.js 0 命中（FE-V14-1 未开工，候 BE-V14-B，符合排程）。架构师异议走增量裁定，lead 持最终决策权（函内自明，本注记照录不代裁）。
 > 本件**取代** REV-V14-Prep 中间版 1/3–3/3 中「lib/org.js、LICENSE、test/** = blocker 待裁定」全部预留条款；其余条目继续有效并并入本件。
-> 依据文档：docs/ARCH-V14-CONTRACT.md @f81ab6b（blob cb396c9f）含 §G@bc968c5 + ARCH-ADJ-1 增量在册；ARCH-ADJ-2（本定版源件，node→node-5，§G 尾部入册随 lead）；ARCH-ADJ-3（Q1/Q4/Q5 邮件终裁，f4d4b47 message 在案）；lead 口径终裁 mtmwh4l3-uhbh；ARCH-ADJ-R1 断言纪律 G1–G4；G-ATTR-1/2；《验收证据规范》三点套 + 行号钉 commit 惯例。
+> 依据文档：docs/ARCH-V14-CONTRACT.md @f81ab6b（blob cb396c9f）含 §G@bc968c5 + ARCH-ADJ-1 增量在册；ARCH-ADJ-2（本定版源件，node→node-5，§G 尾部入册随 lead）；ARCH-ADJ-3（Q1/Q4/Q5 邮件终裁，f4d4b47 message 在案）；lead 口径终裁 mtmwh4l3-uhbh；ARCH-ADJ-R1 断言纪律 G1–G4；G-ATTR-1/2；《验收证据规范》三点套 + 行号钉 commit 惯例；lead 预裁 mtng97v8-7fsa（FE-V14-1 合入前置负面裁定，v2.2 入位）。
 > 通用纪律：一切行号引用附 commit 锚（@<sha>）；一切对账用 **blob 谱系**（`git show <commit>:<path> | sha256sum`），盘 sha 只作同时点证据不作后续锚。
 
 ---
@@ -64,6 +65,7 @@ docs/ 下评审/QA/台账文档属评审侧留痕，不入波次 commit、不计
 
 **B-6 在役面零触碰**：/feed、/org、/chart、/sessions 行为不变（只增不改）；org_mutate/自我更新/灵感引擎/导出导入零改动。复核=路由 diff 定位 + mount-selftest 装载路径断言 + 相关 gate 测试（org-import-gate/org-mutate-update-gate）全绿。
 lead 口径终裁（mtmwh4l3）入案：op=update 空 patch = 不抛错、「已更新节点 X」+ 磁盘 deepEqual 零变化（裁定③定版）；终审**勿按**旧备案②（lib throw）开红。
+FE-V14-1 对位注（mtng97v8-7fsa 预裁，v2.2 随册）：本条「其余四 Tab 零改动」与三内联调用点（L1039/L1094/L1290@2f30d58）对 FE 波 diff 零行，是同一执法项的正反两面——FE 波若改三内联即触本条红；**反向护栏**：FE-V14-1 票面不得以「lastBeat 调用点未一并收敛」作合入前置（收敛承载=ARCH-DEBT-04 或另立机械票，见册首 v2.2 注记）。
 
 **B-7 现网零触达**：不触 :3080、零写 ~/.dsh/agent-org（涉审票自证 org.json/messages/reports/roles 等四文件 sha256 前后一致）；重启验证归外部。
 
