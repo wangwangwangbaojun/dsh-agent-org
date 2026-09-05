@@ -12,7 +12,8 @@
 //   4. spawn `npx dsh --profile headless <任务文本>`（独立进程，邮件是唯一输入输出）。
 //   5. 角色进程的 stdout（最终助手消息）= 结果，回投到发件人收件箱；
 //      发件人若是组织内节点 → 以本节点名义 org_send；外部（external）→ 投负责人。
-//   6. 无论成败失败都推进游标；失败也要回投一条错误摘要，绝不让任务静默蒸发。
+//   6. 无论成败失败都推进游标；失败原则上回投错误摘要（例外：[系统确认] 确认类、DEF-STORM-001 通知链终点
+//      与熔断窗口——三者均 reports.jsonl 留痕且积压不蒸发，见 v0.15 说明）。
 //
 // 用法：
 //   org-role <nodeId> [--interval 秒] [--org 组织id] [--once]
@@ -22,6 +23,15 @@
 // v0.13 新能力：
 //   - 自我更新：空闲轮检测到插件源码指纹变化 → 自动 spawn 新代码进程并干净退出（换代无感，游标在盘上）。
 //   - 灵感引擎（--inspire N）：空转满 N 分钟自动触发「自主选题干活」headless 任务；成员成果自动抄送负责人。
+//
+// v0.15 DEF-STORM-001（失败通知风暴止血，裁定=QA 三选案的 1+3 组合）：
+//   断连期间角色进程成片「exit1 无输出」，而 [系统确认] 抑制依赖角色进程产出 stdout——进程死了
+//   抑制永不生效，失败回投作为普通邮件进对端队列又被当新任务执行，A↔B 以轮询速率互喂自持放大。
+//   止血全部落在 daemon 侧（确定性，不依赖子进程存活）：
+//   a) 通知链 hop 消耗：失败回投正文固定携 [hop:0]（回弹就地收束）；完成回投携 [hop:N-1]（成果流转扣额度）；
+//   b) 通知链终点：hop=0 的通知（[任务完成/[任务失败 前缀）其执行本身再失败 → 不再回弹，仅 reports.jsonl 留痕；
+//   c) 同因连败熔断：连续同因（transport/timeout/spawn/other）失败达 GUARD_FAIL_LIMIT → 冷却
+//      GUARD_COOLDOWN_S 秒：窗口内不领任务、不 spawn、**游标保留**（任务不蒸发），向负责人汇总一封；窗口过自动恢复。
 
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -64,6 +74,10 @@ const INSPIRE_MIN = Number(args.flags.inspire ?? 0); // >0 = 灵感引擎：空�
 const MAX_OUTPUT = 60000; // 角色进程 stdout 截断上限
 const MAX_BODY = 6000;    // 单封邮件正文注入上限（防任务文本里塞垃圾撑爆 prompt）
 const DEFAULT_HOPS = 6;   // 邮件乒乓护栏：任务默认最多转手次数
+// DEF-STORM-001 止血参数：失败回投 hop 归零 + 同因连败熔断（daemon 侧确定性，不依赖子进程 stdout）。
+const FAIL_NOTICE_HOPS = 0;      // 失败通知正文携带的转手额度（0 = 收到即就地收尾，回弹链断在此处）
+const GUARD_FAIL_LIMIT = 3;      // 同因连败阈值：达到即熔断暂停派工
+const GUARD_COOLDOWN_S = Number(process.env.DSH_ORG_GUARD_COOLDOWN_S ?? 300); // 熔断冷却秒数（窗口内游标保留）
 const ENV_TASK_ID = 'DSH_ORG_TASK_ID';
 const ENV_NODE_ID = 'DSH_ORG_NODE_ID'; // headless 子进程身份：org_report 据此为 reports.jsonl 的 report 行补 from/fromName（谁交付了什么）
 
@@ -320,6 +334,30 @@ function readHop(content) {
   return Math.max(0, Number(last?.[1] ?? DEFAULT_HOPS));
 }
 
+// ---------------------------------------------------------------- DEF-STORM-001 失败止血
+
+/** 通知判定：daemon 回投的 [任务完成/[任务失败 前缀邮件（与 buildTaskText 的 isNotice 同源语义）。 */
+function isNoticeContent(content) {
+  const s = String(content ?? '');
+  return s.startsWith('[任务完成') || s.startsWith('[任务失败');
+}
+
+/** 失败归因（熔断按「同因」计数）：TRANSPORT 断连 / 超时强杀 / 起进程失败 / 其他。 */
+function failKind(output) {
+  const s = String(output ?? '');
+  if (/TRANSPORT|Connection error/i.test(s)) return 'transport';
+  if (/超时（.*）已强杀|输出超上限/.test(s)) return 'timeout';
+  if (/无法启动角色进程|daemon 执行异常/.test(s)) return 'spawn';
+  return 'other';
+}
+
+/** 熔断状态持久化：runner-state.json 独立键（与游标键分离；跨 daemon 进程/自我换代可见；随游标推进原子落盘）。 */
+const guardKey = (orgId) => `${orgId}/${SELF_ID}#guard`;
+function loadGuard(orgId) {
+  const v = loadRunnerState()[guardKey(orgId)];
+  return typeof v === 'object' && v !== null ? v : null;
+}
+
 // ---------------------------------------------------------------- 灵感引擎
 
 /** 空转时的自主课题任务文本：让角色自己找灵感、自己立项干活。 */
@@ -386,8 +424,15 @@ async function main() {
     const key = `${self.org.id}/${SELF_ID}`;
     const cursor = state[key];
     const fresh = cursor === undefined ? inbox : inbox.slice(inbox.findIndex((message) => message.id === cursor) + 1);
+    // —— DEF-STORM-001 熔断窗口：不领任务、不 spawn、不推进游标（任务在盘上不蒸发），灵感引擎同停；窗口过自动恢复。
+    const cooldownLeft = Math.ceil((loadGuard(self.org.id)?.cooldownUntil ?? 0) - Date.now() / 1000);
+    const inCooldown = cooldownLeft > 0;
     // 半行竞态：daemon 刚回投后立刻再读，最后一行可能未刷完——找不到游标 id 时本轮跳过，下轮再试
-    if (cursor !== undefined && inbox.findIndex((message) => message.id === cursor) === -1) log('游标未命中（可能半行竞态），本轮跳过');
+    if (inCooldown) {
+      writeHeartbeat({ status: 'backoff', busy: null });
+      log(`⛔ 熔断冷却中（余 ${cooldownLeft}s）：本轮不领任务、不回投、游标保留`);
+    }
+    else if (cursor !== undefined && inbox.findIndex((message) => message.id === cursor) === -1) log('游标未命中（可能半行竞态），本轮跳过');
     else if (fresh.length > 0) {
       const message = fresh[0];
       processed += 1;
@@ -409,23 +454,54 @@ async function main() {
       // 回投：组织内节点→以本节点名义；外部→投负责人（外部没有收件箱语义，负责人是默认落点）
       // [系统确认] 开头的纯确认不投——防两角色对结果通知互相回投成环
       const suppressed = result.output.trimStart().startsWith('[系统确认]');
+      // —— DEF-STORM-001 通知链终点：hop=0 的通知其执行本身又失败 → daemon 侧就地收束（仅留痕，不再回弹）。
+      //    这是断连场景唯一可靠的止损点：[系统确认] 抑制依赖角色进程产出 stdout，进程死无输出时全靠这条。
+      const noticeTerminal = !result.ok && hopLimit === 0 && isNoticeContent(message.content);
       const externalReply = message.from === 'external';
       const target = externalReply
         ? (() => { const lead = self.org.nodes.find((entry) => entry.id === self.org.rootNodeId); return lead ?? self.node; })()
         : (self.org.nodes.find((entry) => entry.id === message.from) ?? null);
-      if (target !== null && target !== undefined && !suppressed) {
-        const body = `[任务${result.ok ? '完成' : '失败'} ${message.id}] 来自 ${self.node.name}：\n${result.output.slice(0, 8000)}`;
+      if (target !== null && target !== undefined && !suppressed && !noticeTerminal) {
+        // DEF-STORM-001 通知链 hop 消耗：失败回投固定 [hop:0]（回弹就地收束）；完成回投 [hop:N-1]（成果流转逐跳扣额度）。
+        const outHop = result.ok ? Math.max(0, hopLimit - 1) : FAIL_NOTICE_HOPS;
+        const body = `[任务${result.ok ? '完成' : '失败'} ${message.id}] 来自 ${self.node.name}：\n${result.output.slice(0, 8000)}\n[hop:${outHop}]`;
         appendMessage({
           from: SELF_ID, fromName: self.node.name, fromOrg: self.org.id,
           to: target.id, toName: target.name, toOrg: self.org.id, content: body,
         });
       }
-      appendReport({ type: 'run', to: SELF_ID, toOrg: self.org.id, from: message.from, fromOrg: message.fromOrg, node: SELF_ID, taskId: message.id, action: result.ok ? 'done' : 'error', ok: result.ok, summary: `⚙ ${result.ok ? '完工' : '出错'}：任务 ${message.id}${suppressed ? '（确认类，未回投）' : target !== null && target !== undefined ? ` → 回投${target.name}` : ''}` });
+      appendReport({ type: 'run', to: SELF_ID, toOrg: self.org.id, from: message.from, fromOrg: message.fromOrg, node: SELF_ID, taskId: message.id, action: result.ok ? 'done' : 'error', ok: result.ok, summary: `⚙ ${result.ok ? '完工' : '出错'}：任务 ${message.id}${suppressed ? '（确认类，未回投）' : noticeTerminal ? '（通知链终点，未回投）' : target !== null && target !== undefined ? ` → 回投${target.name}` : ''}` });
       // —— §C2(b) 团队回投 hook：完成回投落盘之后、游标推进之前（OPS-V15 §8.2 定死落点）。
       //    整段 catch-all no-op：异常不得阻断回投与游标推进；零触碰游标逻辑与 claim 面。
       teamReplyHook(message, result, suppressed);
 
+      // —— DEF-STORM-001 同因连败计数 → 熔断（阈值=GUARD_FAIL_LIMIT）。熔断只冻结「领新任务」，
+      //    游标照常推进本单（本单已有留痕与汇总），窗口内积压任务全部在盘，恢复后按序处理，零蒸发。
+      const guardPrev = loadGuard(self.org.id);
+      let guardPatch = null; // null=本轮不动熔断键；'clear'=清零；object=写入新计数
+      if (result.ok) {
+        if ((guardPrev?.streak ?? 0) > 0) guardPatch = 'clear';
+      } else {
+        const kind = failKind(result.output);
+        const streak = (guardPrev?.kind === kind ? guardPrev.streak : 0) + 1;
+        guardPatch = { streak, kind };
+        if (streak >= GUARD_FAIL_LIMIT) {
+          guardPatch.cooldownUntil = Math.floor(Date.now() / 1000) + GUARD_COOLDOWN_S;
+          const leadNode = self.org.nodes.find((entry) => entry.id === self.org.rootNodeId) ?? null;
+          appendReport({ type: 'run', to: SELF_ID, toOrg: self.org.id, from: 'system', node: SELF_ID, taskId: message.id, action: 'circuit', ok: false, summary: `⛔ 熔断开启：${kind} 类角色进程连败 ${streak}（阈值 ${GUARD_FAIL_LIMIT}），冷却 ${GUARD_COOLDOWN_S}s 不派新任务（游标保留），向${leadNode ? leadNode.name : '负责人'}汇总一封` });
+          if (leadNode !== null && leadNode.id !== SELF_ID) {
+            appendMessage({
+              from: SELF_ID, fromName: self.node.name, fromOrg: self.org.id,
+              to: leadNode.id, toName: leadNode.name, toOrg: self.org.id,
+              content: `[任务失败 ${message.id}] 来自 ${self.node.name}（熔断汇总）：角色进程连败 ${streak} 次（因由=${kind}，阈值 ${GUARD_FAIL_LIMIT}，最近任务 ${message.id}）。daemon 已进入熔断窗口 ${GUARD_COOLDOWN_S}s：窗口内不再逐单派工与逐单回投，积压任务游标保留，窗口过后自动恢复。本件为熔断汇总通知，就地收尾即可，无需处置。\n[hop:0]`,
+            });
+          }
+          log(`⛔ 熔断开启：${kind} 类连败 ${streak} → 冷却 ${GUARD_COOLDOWN_S}s，${leadNode ? `向${leadNode.name}汇总一封` : '无负责人，仅留痕'}`);
+        }
+      }
       const next = { ...loadRunnerState(), [key]: message.id };
+      if (guardPatch === 'clear') delete next[guardKey(self.org.id)];
+      else if (guardPatch !== null) next[guardKey(self.org.id)] = guardPatch;
       atomicWriteJson(runnerStatePath(), next);
       writeHeartbeat({ status: 'idle', busy: null, tasksDone: processed, lastTask: message.id });
       lastActiveAt = Date.now(); // 灵感计时从最后一次真实活动起算
@@ -436,8 +512,8 @@ async function main() {
     if (ONE_SHOT) break;
     // 自我更新：代码变了且此刻空闲 → 换代 re-exec（任务执行中永远不换）
     if (codeFingerprint() !== startFingerprint) selfRestart();
-    // 灵感引擎：空转满 N 分钟 → 自主构思课题开工（执行/回投/心跳与收件箱任务同构）
-    if (INSPIRE_MIN > 0 && Date.now() - lastActiveAt >= INSPIRE_MIN * 60000) {
+    // 灵感引擎：空转满 N 分钟 → 自主构思课题开工（执行/回投/心跳与收件箱任务同构）；DEF-STORM-001：熔断窗口内同停
+    if (!inCooldown && INSPIRE_MIN > 0 && Date.now() - lastActiveAt >= INSPIRE_MIN * 60000) {
       lastActiveAt = Date.now();
       processed += 1;
       const inspireId = `inspire-${Date.now().toString(36)}`;
@@ -459,7 +535,7 @@ async function main() {
       if (MAX_TASKS > 0 && processed >= MAX_TASKS) { log(`达到 max-tasks=${MAX_TASKS}，退出`); break; }
       continue;
     }
-    writeHeartbeat({ status: 'idle' });
+    if (!inCooldown) writeHeartbeat({ status: 'idle' });
     // —— §C2(c) 空闲轮兜底 tick（心跳后）：recompute + §C4 超时判定，覆盖工具未装载/进程崩溃丢触发。
     //    §G 兼容红线：team.json 缺失=no-op；异常一律软失败留痕，绝不阻断心跳轮询/自我换代/灵感轮。
     try {
