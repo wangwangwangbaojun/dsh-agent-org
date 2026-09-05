@@ -1,7 +1,9 @@
-// BUG-V14B-2 金样：org_mutate op=update 的 patch 防线——未知键必抛（票面必修项；禁「返回成功但什么都没写」）。
-// 票面可选项「零有效键必抛」与 QA-GATE1 A4（lead 裁定③钉：空入参=成功+盘零变化）冲突，不落地，由本件 2b 锁等旧。
+// BUG-V14B-2/3 金样：org_mutate op=update 的 patch 防线——未知键必抛 + 零有效已知键必抛（禁「返回成功但什么都没写」）。
+// 「零有效键必抛」曾系票面可选项，与 QA-GATE1 A4 旧钉（lead 裁定③：空入参=成功+盘零变化）冲突而不落地；
+// lead 票 mtnb4jm0-td72 裁定并入 BUG-V14B＝A4 换钉兑现，本件 2b 由「锁等旧」翻为「锁必抛」
+//（org.js 恢复点注释同步收口；test/org-mutate-update-gate.test.mjs A4 同步换钉）。
 // 已知键集（内核 update 分支白名单）：name/title/model/systemPrompt/toolScope/maxTokens。
-// Web 面 client.js patchOf 恰发这 6 键 → 等旧零回归；本件同时静态锚定 patchOf 键集，防前端未来加键悄悄失联。
+// Web 面 client.js patchOf 恰发这 6 键 → 零键门不可能误伤 Web 更新路径；本件同时静态锚定 patchOf 键集，防前端未来加键悄悄失联。
 // 跑法：node --test test/bugv14b-update-gate.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -49,15 +51,21 @@ test('V14B-2a：patch 含未知键 → OrgError 点名未知键，doc 零改动'
   assert.equal(d2.orgs[0].nodes[0].title, baseNode.title, '整单拒=合法键也不得生效');
 });
 
-test('空 patch 等旧钉（QA-GATE1 A4 · lead 裁定③冻结面）：返回成功前缀+盘零变化；票面可选拒门不落地，此处锁死等旧', async () => {
-  const doc = loadOrg(process.env.DSH_AGENT_ORG_PATH);
+test('空 patch 必抛（BUG-V14B-3 · lead 票 mtnb4jm0-td72＝A4 换钉兑现）：mutate 直调+工具面两径均抛、盘字节零变化', async () => {
   const before = readFileSync(process.env.DSH_AGENT_ORG_PATH, 'utf8');
-  // mutate 直调与工具面两径都维持 no-op 成功（A4 口径）；未来若 A4 换钉，本案翻成 throws 并恢复 org.js 零键拒门。
-  const ret = await mutateTool.execute({ op: 'update', id: 'lead' }, ctx);
-  assert.ok(typeof ret === 'string' && ret.startsWith('已更新节点 lead'), `空入参返回口径漂移：${String(ret).slice(0, 40)}`);
-  const norm = (s) => { const j = JSON.parse(s); j.updatedAt = null; return JSON.stringify(j); }; // A4 口径=字段面零变化（saveOrg 刷 updatedAt 属合法簿记）
-  assert.equal(norm(readFileSync(process.env.DSH_AGENT_ORG_PATH, 'utf8')), norm(before), '空入参后磁盘任何字段漂移即红（A4 零变化契约）');
-  void doc;
+  // 旧「空入参=成功前缀」钉（QA-GATE1 A4 · lead 裁定③）已由 lead 票 mtnb4jm0-td72 换钉：
+  // 空 patch 成功返回正是 BUG-V14 失败签名「返回成功但无操作」。throw 先于 saveOrg → 盘字节级零变化（含 updatedAt）。
+  assert.throws(
+    () => mutate(loadOrg(process.env.DSH_AGENT_ORG_PATH), { op: 'update', id: 'lead', patch: {} }),
+    (err) => err instanceof OrgError && /未携带任何已知字段/.test(err.message),
+    'mutate 直调空 patch 必抛（零有效已知键）',
+  );
+  await assert.rejects(
+    mutateTool.execute({ op: 'update', id: 'lead' }, ctx),
+    (err) => err instanceof OrgError && /未携带任何已知字段/.test(err.message),
+    '工具面零可更新字段必抛（适配层打包出空 patch）',
+  );
+  assert.equal(readFileSync(process.env.DSH_AGENT_ORG_PATH, 'utf8'), before, '必抛路径盘字节零变化（throw-before-write，含 updatedAt 簿记也不许漂）');
 });
 
 test('等旧红线：Web patchOf 全 6 键形态整单通过且逐字段落盘（含 maxTokens:null 合法值）', async () => {

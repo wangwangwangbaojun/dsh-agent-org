@@ -14,7 +14,10 @@
 //   C 组 = 其余 op（add/move/addEdge/removeEdge/layoutAll/delete）零回归；D1 = 数据文件隔离。
 //   全部断言走「工具面调用 → 磁盘回读对账」，不信返回值文案。
 //   A4 为固化时的真断言改造（lead 裁定③）：源脚本里 check(..., async () => {}) 恒真；
-//   此处改为 await 空调用返回后，判定「不抛错 + 返回成功前缀 + 磁盘逐字段零变化」。
+//   固化初期判「不抛错 + 返回成功前缀 + 磁盘逐字段零变化」；后经 lead 票 mtnb4jm0-td72 换钉
+//   （并入 BUG-V14B-3）：空入参成功返回＝BUG-V14 失败签名「返回成功但无操作」，A4 翻为
+//   「必抛 + 磁盘逐字段零变化」。双向证据契约随之增补：换钉后的 A4 在 pre-fix 树亦入红集
+//   （静默成功恰是新钉要拦的形状），原红案集合 A1 A2 A4b B1 B2 B4 只增不减。
 //
 // 双向证据契约（lead 验收②）：本文件在 pre-fix 净树（c162805 及更早）必红——
 //   预期红案 A1 A2 A4b B1 B2 B4（静默 no-op 与校验被绕过的直接显形）；在 fix 树必绿。
@@ -125,11 +128,11 @@ test('A3 update 返回值口径不变（「已更新节点 node-w」前缀 + 架
   assert.ok(ret2.startsWith('已更新节点 node-w'), ret2.slice(0, 40));
 });
 
-test('A4 update 空入参：await 返回后判定不崩溃 + 返回成功前缀 + 磁盘零变化（源脚本恒真案的真断言固化，lead 裁定③）', async () => {
+test('A4 update 空入参：必抛（BUG-V14B-3 · lead 票 mtnb4jm0-td72 换钉）+ 磁盘零变化（空入参成功返回=V14 失败签名，禁再回潮）', async () => {
   const before = diskNode('node-w');
-  const ret = await mutateTool.execute({ op: 'update', id: 'node-w' }); // 空 patch：与 org.js 空 patch 语义一致
-  assert.ok(typeof ret === 'string' && ret.startsWith('已更新节点 node-w'), `空入参返回口径异常：${String(ret).slice(0, 40)}`);
-  assert.deepEqual(diskNode('node-w'), before, '空入参调用后磁盘发生任何字段漂移即红（零变化契约）');
+  // 旧钉（lead 裁定③「空入参=成功前缀」）已由 lead 票 mtnb4jm0-td72 并入 BUG-V14B-3 换钉为零键必抛。
+  await expectThrows(mutateTool.execute({ op: 'update', id: 'node-w' }), /未携带任何已知字段/, 'A4·空入参静默成功复现（换钉面）');
+  assert.deepEqual(diskNode('node-w'), before, '空入参被拒后磁盘发生任何字段漂移即红（零变化契约，throw-before-write）');
 });
 
 test('A4b update 空入参后磁盘字段仍为 A1/A2 终值（零变化契约的显形对账）', async () => {
