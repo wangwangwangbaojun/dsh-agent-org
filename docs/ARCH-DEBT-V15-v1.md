@@ -31,6 +31,7 @@
 
 - **OPS-V15 仲裁书 §10-①**：runner-state.json 多 daemon 全文件 RMW 竞态（写路径全同步、竞态窗=OS 级抢占微秒窗；V15-A 使暴露点 ×3）——修复面（per-node 分文件或 O_EXCL 锁）牵动 README 文件表与导入面，本波不扩，ARCH-DEBT 挂 v0.15。
 - **§E 探针集（G1–G5 判据 + be14-probe 类脚本）**：v0.15+ 调研 backlog（进阶路线 NO-GO 定案转册，重评审门槛=dsh 平台跨进程单写者协议＋sessionDir 登记面）。
+- **ADJ-V14B-MODEL（架构师终裁，2026-09-05 [mto90y8w-aqtv]）｜org_mutate model 契约面终态＝B 案·系追认非新建**：插件 schema=object{provider?,model?,fallback?}+null（lib/index.js:827）自 **648cad8（BE-V14B-1）起即法**，HEAD 承载、宿主装载面同形（e1db937 已证 _meta 属装载层）、Web patchOf 三键同构、教学面（README/guide）零 string 残留，五面一致。**A 案（schema 回 string＋工具面归一化）驳回**：其前题「现势 schema=string」不成立（仅 6a6e8ae..648cad8 窗口瞬时态），采 A＝回退 648cad8 + 翻转双金锚（bugv14b-model-shape 案1 schema 申报案 ∧ 案3 工具边界 string 必抛+零落盘，实测 6/6 绿@f06d9d6）。**S1 字符串归一化（typeof string→{model:s}）不落地**：落 org_mutate 工具面必与案3 金锚硬撞（归一后 string 经 {model:s} 成功落盘=案3 必红），且语义上以无权威规则的字符串切分猜测替代响亮显式拒绝，与 BUG-V14B-1/2/3/4 全线「响亮拒」哲学相悖；静默清空病已由 sanitizeModel fail-fast 更严格治愈，归一化无剩余缺陷可修。**候证重开门槛**：工具面真实旧调用方在盘证据（调用日志/语料实证仍发 string）出现，方可另票复议 {model:s} 兼容；node-5 v14b-fix2-rev「schema 零改动」边界**不顺延、原样成立**（B 终态零 schema 增量；V14B-FIX2 剩余票面剔除归一化段后本无 schema 面诉求）。
 
 **并案建议（供 v0.15 排期时 lead 裁量，非现势裁定）**：DEBT-02＋DEBT-03＋OPS §10-① 三件同属「daemon 态/游标文件写面收口」，开票时宜并为一票（统一走 org.js 泛化原子原语＋单写者仲裁选型），一次动 bin/org-role.js 与 lib/index.js 两文件域。
 
