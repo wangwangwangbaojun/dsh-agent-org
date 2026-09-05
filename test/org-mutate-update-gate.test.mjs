@@ -1,4 +1,4 @@
-// BUG-V14 常备门禁：org_mutate op=update 静默 no-op 修复的 18 案固化回归（QA-GATE1）。
+// BUG-V14 常备门禁：org_mutate op=update 静默 no-op 修复的固化回归（QA-GATE1；现 23 案，构成见下）。
 // 任务 id=mtn0evgj-nb8i（BUG-V14 线 mtlluww2-kkws 尾单）；源脚本 /tmp/bugv14-verify/verify.mjs（不入库，本文件即其固化形态）。
 //
 // 缺陷回顾（BUG-V14，修复见 commit 6a6e8ae）：
@@ -8,10 +8,15 @@
 //   连带的 B1/B2 校验防线（toolScope 冲突、maxTokens 越界）也被一并绕过——不报错、不落盘、假成功。
 //   修复 = op=update 时把平铺字段按需打包进 request.patch，其余 op 零改动。
 //
-// 用例面 = 18 案，编号与源脚本一一对应（A1 A2 A3 A4 A4b B1 B2 B3 B4 C1 C2 C3 C4 C5 C6 C7 D1），
-//   外加评审补案 A5（代码评审意见 mtlk6288-eanw，四象限(c) patch非replace 唯一缺口，后插于 A4b 之后，不在源脚本编号集内）：
+// 用例面 = 23 案（S4 计数勘误，源=评审函 mtncm3m3-hyzg 建议④；口径=实测，与 node --test 计数一致；
+//   旧注记「18 案，编号与源脚本一一对应」系 off-by-one——所列编号实 17 枚，A5 不在源脚本编号集内；
+//   关票通告曾引「19 案」亦误，HEAD 实测恒为 18。实构成为：源脚本 17 案 + 评审补案 1 案 + V14B-FIX2 补案 5 案）：
+//   源脚本 17 案（A1 A2 A3 A4 A4b B1 B2 B3 B4 C1 C2 C3 C4 C5 C6 C7 D1），
+//   外加评审补案 A5（代码评审意见 mtlk6288-eanw，四象限(c) patch非replace 唯一缺口，后插于 A4b 之后，不在源脚本编号集内），
+//   外加 V14B-FIX2 补案 5 案（评审函 mtncm3m3-hyzg 建议①②③：S1a/S1b/S1c/S2/S3，后插于 D1 之后）：
 //   A 组 = update 落盘对账（本票修复面）；B 组 = 校验防线不被绕过 + 报错路径零落盘；
-//   C 组 = 其余 op（add/move/addEdge/removeEdge/layoutAll/delete）零回归；D1 = 数据文件隔离。
+//   C 组 = 其余 op（add/move/addEdge/removeEdge/layoutAll/delete）零回归；D1 = 数据文件隔离；
+//   S 组 = V14B-FIX2 补面（model 形状归一化 / maxTokens null 复位 / args.org 跨 org 定位）。
 //   全部断言走「工具面调用 → 磁盘回读对账」，不信返回值文案。
 //   A4 为固化时的真断言改造（lead 裁定③）：源脚本里 check(..., async () => {}) 恒真；
 //   固化初期判「不抛错 + 返回成功前缀 + 磁盘逐字段零变化」；后经 lead 票 mtnb4jm0-td72 换钉
@@ -51,6 +56,14 @@ const SEED = {
     nodes: [
       { id: 'lead', parentId: null, name: '负责人', title: '总体协调', model: null, systemPrompt: '', toolScope: { allow: [], deny: [] }, maxTokens: null, layout: null, x: 60, y: 40 },
       { id: 'node-w', parentId: 'lead', name: '工人', title: '执行', model: '', systemPrompt: 'old-p', toolScope: { allow: [], deny: [] }, maxTokens: null, layout: null, x: 100, y: 150 },
+    ],
+    edges: [],
+  }, {
+    // S3 跨 org 种子（V14B-FIX2）：activeOrg 缺省命中 orgs[0]，org-b 的节点必须靠 args.org 才寻得回。
+    id: 'org-b', name: '二队', rootNodeId: 'b-lead',
+    nodes: [
+      { id: 'b-lead', parentId: null, name: '负责人B', title: '协调B', model: null, systemPrompt: '', toolScope: { allow: [], deny: [] }, maxTokens: null, layout: null, x: 60, y: 40 },
+      { id: 'b-node', parentId: 'b-lead', name: '工人B', title: '执行B', model: null, systemPrompt: '', toolScope: { allow: [], deny: [] }, maxTokens: null, layout: null, x: 100, y: 150 },
     ],
     edges: [],
   }],
@@ -247,4 +260,51 @@ test('D1 全程数据文件只落在 mkdtemp 临时目录（生产盘零接触�
   assert.ok(!doc.orgs[0].nodes.some((n) => n.id === addedId || n.id === 'node-w'), 'C6 子树删除未反映在隔离盘上');
   assert.ok(doc.orgs[0].nodes.some((n) => n.id === added2Id), '新丁2 不应被牵连删除');
   assert.deepEqual(doc.orgs[0].edges, []);
+});
+
+// ============ S. V14B-FIX2 补面（评审函 mtncm3m3-hyzg 建议①②③；team 票 v14b-fix2-impl） ============
+// S1 = 工具边界 model 形状归一化：string→{model}、对象原样透传、undefined 零触碰（防 replace 化）；
+// S2 = maxTokens 显式 null 复位承诺固化（schema「integer … or null (= default)」）；
+// S3 = args.org 跨 org 定位：显式指定非 active org 的 update 落目标 org，默认 org 字节零漂移。
+// 双向证据契约（lead 规格函 mto90y8p-8kmk 红绿契约）：修复前 HEAD 必红案=S1a——现 HEAD（f06d9d6）
+//   上 string 入参经 sanitizeModel fail-fast 响亮抛（BUG-V14B-1 把旧「静默吞 {} 仍报成功」升格，
+//   评审函记的「清空为 {} 返成功」系 6a6e8ae 时点形态），两种形态同违「归一化落盘」承诺，同判红；
+//   S1b/S1c/S2/S3 系既有行为固化案，修复前后同绿。落 S1 归一化后 23/23 全绿。
+// 目标节点=新丁2（added2Id，C6 后仍在盘）；S3 走 SEED 第二组织 org-b。磁盘回读口径，不信返回文案。
+
+test('S1a update model:string 归一化落盘 → 盘上 {model:"deepseek-v3"}（V14B-FIX2·S1·修复前必红案）', async () => {
+  await mutateTool.execute({ op: 'update', id: added2Id, model: 'deepseek-v3' });
+  assert.deepEqual(diskNode(added2Id).model, { model: 'deepseek-v3' }, 'string model 未归一化为 {model:string}（修复前形态：sanitizeModel 抛/旧版静默吞 {}）');
+});
+
+test('S1b update model:object 三键（fallback:null）原样透传 → 盘上 {provider:"p",model:"m"}（V14B-FIX2·S1）', async () => {
+  await mutateTool.execute({ op: 'update', id: added2Id, model: { provider: 'p', model: 'm', fallback: null } });
+  // 「原样」= 工具边界不包裹不破坏对象（若被 string 分支误包裹，model 子键成对象必撞 subfield-lock 响亮抛）；
+  // null 子键＝空面（沿用宿主默认），由域层 sanitizeModel 省略——test/bugv14b-model-subfield-lock 同源口径。
+  assert.deepEqual(diskNode(added2Id).model, { provider: 'p', model: 'm' });
+});
+
+test('S1c update 不带 model（undefined）→ 盘上既有 model 零变动（V14B-FIX2·S1·防未来 replace 化）', async () => {
+  const before = diskNode(added2Id).model;
+  assert.deepEqual(before, { provider: 'p', model: 'm' }, '前置件：S1b 已写入可区分基线');
+  await mutateTool.execute({ op: 'update', id: added2Id, title: 'S1c-title' });
+  const n = diskNode(added2Id);
+  assert.equal(n.title, 'S1c-title', 'title 未落盘（update 本体失效，model 不变式失明）');
+  assert.deepEqual(n.model, before, 'model 在未携带 model 键的 patch 下漂移 → 打包层被 replace 化');
+});
+
+test('S2 update maxTokens 4096→回读 4096，再 null→盘上复位 null（V14B-FIX2·S2 锁 schema null 复位承诺）', async () => {
+  await mutateTool.execute({ op: 'update', id: added2Id, maxTokens: 4096 });
+  assert.equal(diskNode(added2Id).maxTokens, 4096, 'maxTokens=4096 未落盘');
+  await mutateTool.execute({ op: 'update', id: added2Id, maxTokens: null });
+  assert.equal(diskNode(added2Id).maxTokens, null, 'maxTokens 显式 null 复位未落盘（schema「or null (= default)」承诺被破坏）');
+});
+
+test('S3 args.org 显式指定非 active org 做 update → 目标 org 盘上生效、默认 org 字节零漂移（V14B-FIX2·S3）', async () => {
+  const beforeDefault = JSON.stringify(disk().orgs[0]);
+  // b-node 仅存在于 org-b：args.org 若被丢弃，activeOrg=orgs[0] 寻不回 → 「节点不存在」抛（红形态）
+  await mutateTool.execute({ op: 'update', org: 'org-b', id: 'b-node', title: '跨org改' });
+  const b = disk().orgs[1].nodes.find((n) => n.id === 'b-node');
+  assert.equal(b.title, '跨org改', 'update 未落在 args.org 指定组织（跨 org 定位失效）');
+  assert.equal(JSON.stringify(disk().orgs[0]), beforeDefault, '默认 org 发生字节级漂移（跨 org 定位零连带契约）');
 });
