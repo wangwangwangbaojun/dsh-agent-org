@@ -57,7 +57,11 @@ test('A3 静态锚：host 标记=2/选择器=1/h(SbbSlot) 挂载=2/slot CSS 在�
   assert.equal(hits(/'data-sbb-host': '1'/g), 2);
   assert.equal(hits(/closest\('\[data-sbb-host\]'\)/g), 1);
   assert.equal(hits(/h\(SbbSlot\)/g), 2);
-  assert.ok(SRC.includes('.dshao-sbb-slot{position:sticky;bottom:10px;height:0'));
+  // 2026-09-05 实景修复：height:0 时 28px 按钮下半越界被 scroller overflow 裁成半圆（用户实景所见）。
+  // 锚翻转=有意改规格（零高假设是缺陷本体）；新锚锁「实高 28px + -18px 负边距回收占位」防回退。
+  assert.ok(SRC.includes('.dshao-sbb-slot{position:sticky;bottom:10px;height:28px;margin-bottom:-18px'));
+  assert.ok(SRC.includes('align-items:center;justify-content:center;pointer-events:none'));
+  assert.ok(!SRC.includes('.dshao-sbb-slot{position:sticky;bottom:10px;height:0'), '零高槽回归=半圆裁切回归');
   assert.ok(SRC.includes('.dshao-sbb[data-show=0]{visibility:hidden;opacity:0;pointer-events:none}'));
   assert.equal(hits(/@media \(prefers-reduced-motion:reduce\)/g), 2); // team-card 既有 + sbb 新增
 });
