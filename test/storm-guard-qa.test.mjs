@@ -7,9 +7,11 @@
 //   Q5 错误路径：终点吞弹边界双向 —— 零 hop [任务完成 前缀通知失败 → 终点吞弹仅留痕；hop=1 通知失败 → 照常回弹 [hop:0]。
 //   Q6 错误路径：角色 stdout 末尾嵌入 [hop:9] 攻击位 → readHop 末位匹配下 daemon 注入值必为终值（末位=注入值）。
 //   Q7 边界·存量件：无 [hop:] 标记通知 readHop 回落 6 → 首跳回弹封顶 [hop:0]、第二跳终点吞弹，链深 ≤1 不自放大。
-// 全离线：临时 DSH_AGENT_ORG_PATH + 伪造 npx 注入点，零真实模型调用、零 ~/.dsh 触碰。
+//   Q8 发布面·只读锚：换代指纹→FIX_FP 节点的 [任务失败] 回投尾必携 [hop:0]（架构师 mto96xgk-q9uk 两判据；数据未在场=SKIP+水位注记）。
+// Q1–Q7 全离线：临时 DSH_AGENT_ORG_PATH + 伪造 npx 注入点，零真实模型调用、零 ~/.dsh 触碰。
+// Q8 例外：只读观测真实台账（readFileSync），零写入、零 daemon 拉起、零 :3080 触达——发布生效判据属运行态观测（mto96xgk-q9uk §三.2）。
 import { spawn } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -257,4 +259,74 @@ test('Q7 存量无 [hop:] 标记通知（readHop 回落=6）失败 → 逐跳回
   assert.equal(rig.reports().filter((r) => r.action === 'error' && String(r.summary).includes('通知链终点')).length, 1,
     '第 2 跳有「通知链终点」留痕');
   assert.equal(circuitSummaries(rig).length, 0, '两败未达阈值 3，不误熔');
+});
+
+// ---------------------------------------------------------------- Q8 发布面·只读回归锚
+
+// 架构师裁定 mto96xgk-q9uk §三.2 的生效判据固化：DEF-STORM-001（@f06d9d6）合入后，
+// 「commit 落盘=生效」旧口径作废，运行态判据 =
+//   ①节点 reports.jsonl 出现 action:upgrade 且代码指纹 → FIX_FP（换代到含修复的码）；
+//   ②此后该节点发起的 [任务失败] 回投尾必携 [hop:0]（新码回投的指纹，旧码回投无此尾）。
+// 只读纪律：readFileSync 真实台账，零写入、零 daemon 拉起、零 :3080；数据未在场（发布未完成）→ SKIP+水位注记，
+// 发布进度不判质量红（QA-STORM-ACC-1 票面纪律）。FIX_FP 换代后本锚按 mto96xgk 原文语义钉 84eaed 首越，勿随手跟钉新指纹。
+const FIX_FP = '84eaed9b43add3f3';
+const TO_FIX_FP = new RegExp(`→${FIX_FP}(?![0-9a-fA-F])`);
+
+/** 真实台账根目录：优先 DSH_AGENT_ORG_PATH（指 org.json），回落 $HOME/.dsh/agent-org。 */
+function realLedgerRoot() {
+  if (process.env.DSH_AGENT_ORG_PATH) return dirname(process.env.DSH_AGENT_ORG_PATH);
+  return join(process.env.HOME ?? '', '.dsh', 'agent-org');
+}
+
+test('Q8 发布面只读锚：换代指纹→' + FIX_FP + ' 的节点，其后 [任务失败] 回投尾必携 [hop:0]（数据未在场=SKIP+水位）', (t) => {
+  const root = realLedgerRoot();
+  const reportsPath = join(root, 'reports.jsonl');
+  const messagesPath = join(root, 'messages.jsonl');
+  if (!existsSync(reportsPath) || !existsSync(messagesPath)) {
+    t.skip(`台账文件缺席：${reportsPath} / ${messagesPath} —— SKIP，不判红`);
+    return;
+  }
+  const reports = readJsonl(reportsPath);
+  const messages = readJsonl(messagesPath);
+  // 水位注记：全账最新一次 upgrade 的「到达指纹」清单（发布进度可见面）。
+  const lastUp = new Map();
+  for (const r of reports) {
+    if (r.action !== 'upgrade') continue;
+    const n = r.node ?? r.to;
+    if (n) lastUp.set(n, `${r.ts} ${String(r.summary ?? '').slice(0, 80)}`);
+  }
+  const watermark = () => [
+    `水位 @${root}：reports=${reports.length} 行 messages=${messages.length} 行`,
+    ...[...lastUp.entries()].sort().map(([n, v]) => `  最新换代[${n}] ${v}`),
+    lastUp.size === 0 ? '  （全账零 action:upgrade 记录）' : '',
+  ].filter(Boolean).join('\n');
+
+  // 判据①：按节点取「首次换代到 FIX_FP」时刻（此后该节点回投即新码产物）。
+  const upgradedAt = new Map();
+  for (const r of reports) {
+    if (r.action !== 'upgrade') continue;
+    const n = r.node ?? r.to;
+    if (!n || !TO_FIX_FP.test(String(r.summary ?? ''))) continue;
+    const ts = String(r.ts ?? '');
+    const prev = upgradedAt.get(n);
+    if (prev === undefined || ts < prev) upgradedAt.set(n, ts);
+  }
+  if (upgradedAt.size === 0) {
+    t.skip(`尚无节点换代指纹→${FIX_FP}（发布面未完成，属运行态观测非代码缺陷）\n${watermark()}`);
+    return;
+  }
+  // 判据②：换代时刻之后，该节点发出的 [任务失败] 回投尾必携 [hop:0]。
+  const violations = [];
+  let postFailures = 0;
+  for (const m of messages) {
+    const at = upgradedAt.get(m.from);
+    if (at === undefined) continue;
+    const content = String(m.content ?? '');
+    if (!content.startsWith('[任务失败') || String(m.ts ?? '') <= at) continue;
+    postFailures += 1;
+    if (!/\[hop:0\]\s*$/.test(content)) violations.push(`${m.ts} ${m.from}→${m.to} 尾=…${content.slice(-40)}`);
+  }
+  t.diagnostic(`已换代节点=${[...upgradedAt.keys()].join(',') || '无'} 换代后失败回投=${postFailures} 封 违例=${violations.length}`);
+  assert.equal(violations.length, 0,
+    `换代后旧码形态回投（尾缺 [hop:0]）：\n${violations.slice(0, 5).join('\n')}\n${watermark()}`);
 });

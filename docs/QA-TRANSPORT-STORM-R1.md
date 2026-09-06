@@ -55,3 +55,39 @@
 - 一处待验风险（先登记不裁定）：`noticeTerminal` 以 `hopLimit===0` 为前提，而**在盘存量通知无 `[hop:]` 标记 → readHop 回落 DEFAULT_HOPS=6**，故存量件仍可能逐跳回弹至额度耗尽（有熔断兜底，实际增益受限）；回归时以「存量无 hop 通知」为专测样本。
 
 ——node-4 测试工程师 · QA-TRANSPORT-STORM-R1 附录 R2/R2c · 触发件 mtocvzv5-hr1j（陈旧回声件，就地确认收尾）· 2026-09-05T12:49Z
+
+---
+
+## 附录 R3（QA-STORM-ACC-1 验收腿重派 · 任务 mtogvjx9-e32n · 2026-09-06T00:16Z · node-4）
+
+**验收对象**：DEF-STORM-001 止血 @f06d9d6（hop 注入 + 终点吞弹 + 同因熔断）。回归时点 HEAD=`cb5ec47`（f06d9d6 ⊑ HEAD，`git merge-base --is-ancestor` 实证）；被测面 `bin/org-role.js` blob=`8404bb8a6594318759af4d70d071339c5528deb7`（558 行）在 f06d9d6/HEAD/工作树三处**逐字节同值**（`git diff f06d9d6 HEAD -- bin/org-role.js` 空 diff）——盘上多线合入未触碰被测面。
+
+### AC1 盘上回归机检复跑（净轮 @2026-09-06T00:05Z，无并发负载）
+
+| # | 命令 | 实测 | 判定 |
+|---|------|------|------|
+| R3-1 | `node --check bin/org-role.js` | `SYNTAX_OK`，exit 0 | **通过** |
+| R3-2 | `node --test test/storm-guard.test.mjs` | `# pass 4 / # fail 0`（T1–T4），exit 0 | **通过** |
+| R3-3 | `npm test` | `# tests 209 / # pass 209 / # fail 0`，exit 0（R2 账面红 OG-1② 负载 flake 未再现） | **通过** |
+
+### AC2 存量收口 + 只读发布面锚 Q8
+
+- **存量收口**：两件 WIP（`test/storm-guard-qa.test.mjs`、`docs/QA-TRANSPORT-STORM-R1.md`）已随 `e0687b1` 转正入库（前轮成品补落盘），本轮起点 porcelain=0；Q8 增量另 commit（票号 mtogvjx9-e32n）。
+- **Q8 锚（架构师 mto96xgk-q9uk §三.2 两判据）**：判据①节点 `reports.jsonl` 出现 `action:upgrade` 且指纹 `→84eaed9b43add3f3`；判据②该时刻后该节点 `[任务失败]` 回投尾必携 `[hop:0]`。只读实现：`readFileSync` 真实台账，零写入/零 daemon 拉起/零 :3080；换代数据未在场 → `SKIP`+水位注记（发布进度不判质量红）。
+- **实盘读数** @00:05Z：`node --test test/storm-guard-qa.test.mjs` = **8/8 绿**；Q8 诊断行 `已换代节点=node-3 换代后失败回投=4 封 违例=0`。
+- **变异自检（合成台账 mkdtemp，生产台账零触碰）**：A 换代后回投缺 `[hop:0]` → **not ok（违例=1）**；B 补齐尾标 → ok（违例=0）；C 换代数据缺席 → **SKIP+水位**（`skipped 1`，非红）。绿非空转成立。
+
+### 发布面运行态指纹清单（reports.jsonl/messages.jsonl @00:05Z，只读）
+
+| 节点 | 最新 action:upgrade | 判据①(→84eaed) | 判据②(换代后回投携 hop:0) |
+|------|--------------------|----------------|---------------------------|
+| node-3 | 09-05 22:59:15Z（84eaed→65f6d6ac，主线程推进后再换代） | ✓ 12:58:33.659Z | ✓ 4/4 封携尾（13:48/14:15/22:44/22:59Z 均 `[hop:0]` 尾） |
+| node-4 | 09-04 12:41:25Z（→acd7d9e9，修复前旧指纹） | 未到 | 不适用（未换代） |
+| node-2 | 09-03 13:32:32Z（→8f91cf82，修复前旧指纹） | 未到 | 不适用 |
+| node / node-5 / lead | 全账零 upgrade 记录 | 未到 | 不适用 |
+
+对照账：09-05T12:55Z 后全量 `[任务失败]` 16 封 = 携 `[hop:0]` 尾 **4 封（全部出自唯一换代节点 node-3）** / 无尾 12 封（全部出自未换代 daemon=旧码形态，与 mto96xgk §二.②ps 实证自洽）。**发布传播进度=运行态观察项，归 lead/运维裁，不入质量账**；换代通道活性在码（org-role.js:514 空闲轮指纹检查，R2c 已锚）。
+
+### R3 结论：**通过**（DEF-STORM-001 代码面验收；AC1 三机检净轮全绿 + Q1–Q7 存量 7 案全绿 + Q8 发布面锚实盘绿且变异自检非空转）。发布面 1/6 节点换代到位（唯一具备完整运行态证据的 node-3 两判据全过），余 5 节点候空闲轮自然换代，按票面不判红。本轮改动面=本文件 + `test/storm-guard-qa.test.mjs`（Q8+头注），bin/ lib/ 零触碰，真机 daemon 零触、:3080 零触、生产台账零写入。
+
+——node-4 测试工程师 · QA-STORM-ACC-1 验收腿 mtogvjx9-e32n · 2026-09-06T00:16Z
