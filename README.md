@@ -84,7 +84,12 @@ Web GUI → 设置 → 「Agent 组织」：
 ## 安装
 
 ```bash
-dsh plugin --profile web add link:/home/wjb/programs/dsh-plugins/dsh-agent-org
+# 方式一：从 npm（已发布 @dsh-community/dsh-agent-org）
+dsh plugin --profile web add @dsh-community/dsh-agent-org
+
+# 方式二：本地 clone / link 开发安装
+git clone https://github.com/wangwangwangbaojun/dsh-agent-org.git
+dsh plugin --profile web add link:./dsh-agent-org
 # 重启 DSH Web 服务后生效；浏览器需刷新页面（前端模块在页面加载时拉取）
 ```
 
@@ -102,3 +107,7 @@ cp ~/.dsh/agent-org/org.json.bak.<最新时间戳> ~/.dsh/agent-org/org.json   #
 **跨实例导入（干净重置 = 归档重置）**：目标实例如有历史留痕，导入前先把 `messages.jsonl`、`reports.jsonl`、`state.json`、`runner-state.json` 四个文件**一并**移出 `~/.dsh/agent-org/` 归档（如 `agent-org.bak.<时间戳>/`；四件必须同移，只移消息文件会让游标 id 永久失配），做完干净重置再导入，避免同 id 节点继承旧游标导致重放旧消息或静默屏蔽新消息；`roles.json` 是 daemon 运行时状态（live pid/busy），心跳自愈，不必移出。
 
 实例配置 `lockName: true` 时禁止改组织名称，该策略对 `/mutate`（setName/renameOrg）与 `/import`（同 id 改名）一致生效。落盘临界区全同步 fs、无 await，同进程内 import/mutate 天然串行；跨进程并发无锁（多实例共用同一数据文件时注意）。
+
+## License
+
+MIT

@@ -1,6 +1,6 @@
 {
   "name": "@dsh-community/dsh-agent-org",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "层级 Agent 组织管理：架构图、模型/提示词/工具策略、单一入口派单（org_task）、角色 daemon（dsh-agent-org-role，邮件协同+headless 执行）；14 个协作工具 + REST + Web 设置页。",
   "type": "module",
   "main": "lib/index.js",
@@ -29,9 +29,29 @@
   },
   "files": [
     "lib",
+    "bin",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wangwangwangbaojun/dsh-agent-org.git"
+  },
+  "homepage": "https://github.com/wangwangwangbaojun/dsh-agent-org#readme",
+  "bugs": {
+    "url": "https://github.com/wangwangwangbaojun/dsh-agent-org/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "agent",
+    "multi-agent",
+    "orchestration",
+    "org"
+  ],
+  "author": "wangwangwangbaojun",
   "license": "MIT",
   "bin": {
     "dsh-agent-org-role": "./bin/org-role.js"

@@ -15,3 +15,19 @@ roles.json
 runner-state.json
 state.json
 *.jsonl
+# —— 开源卫生（2026-09-05 开源整备）——
+# 本机运行态数据兜底：team.json 与任意层级同名残留（运行态永不入库；仓库内 org.json 类 ignore 已在上方）
+team.json
+**/team.json
+# npm 发布面
+.npm/
+.npm-cache/
+# 编辑器/IDE
+.vscode/
+.idea/
+*.swp
+# 本地 agent 工具态
+.omo/
+# 临时/系统
+*.tmp
+Thumbs.db
