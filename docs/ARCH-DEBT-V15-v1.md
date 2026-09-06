@@ -28,6 +28,12 @@
 - v0.14 期现行纪律（非本债、随 ADJ-3 D1 生效）：三调用点零触碰；beatAlive 逐字= D1-1 规格，REV 锚=函数体与规格逐字符 diff 空。
 - 状态：已登记（2026-09-05 [mtn1v1cq-3h6q]），待 v0.15 排期。
 
+### ARCH-DEBT-05｜lib/team.js org_team_plan objective trim 空值覆盖＝洗空既有 objective（ADJ-5.1 裁 C 修复面延后）
+- 来源：ARCH-ADJ-5 终裁相邻发现 ADD-5.1（架构师 2/2 件 mtnmyqqi-jqgl，sha256(content)=89d63fab5cefd062a5bca67a808f58ecfa080dc096ad6f7849dbdfc901204e09，§二；契约执法面=ARCH-V14-CONTRACT §G 尾部入册 No.7/lead 落档注记 [mtnmy0ej-s7t0]）。
+- 内容：现盘 `objective` 仅在 :179-182 拦超长、:242 提供即覆盖 ⇒ `objective:"   "`（trim 后空串）系合法覆盖值，可把既有 objective 洗空；:243 仅拦首次立项空值——不变式「objective 非空」可中途摧毁（派发信正文/daemon 注入段随读随空）。架构师终裁＝**裁 C**：最小改动面=入参段一行校验 `objective 提供但 trim 后为空 → OrgError 默认码（形状过错族）`，排期权归 lead。
+- lead 排期裁定（2026-09-06 [mtnmy0ej-s7t0]）：v0.14 **不开改动面（B 轨）**——本波已在 QA-V14 正式票执行/收尾窗，n=17 矩阵字面与运行时棘轮链刚冻结开焊，入参面行为变更会移动盘实况靶、违波次最小改动纪律；缺口可利用面窄（须显式提交纯空白 objective）、损害可逆（再 plan 非空 objective 即复原）、无红线暴露。过渡口径=按盘上实况「空值覆盖合法」钉 G11 族第三夹具靶（QA-V14 已按此执法）。
+- 状态：已登记（2026-09-06 [mtnmy0ej-s7t0]），待 v0.15 排期（修复面≈1 行＋新金样；开票选型届时随本册 §并案建议统一裁量，编号如有异议按勘误收口）。
+
 ## 关联在册挂账（非本台账编号，避免二次编号冲突）
 
 - **OPS-V15 仲裁书 §10-①**：runner-state.json 多 daemon 全文件 RMW 竞态（写路径全同步、竞态窗=OS 级抢占微秒窗；V15-A 使暴露点 ×3）——修复面（per-node 分文件或 O_EXCL 锁）牵动 README 文件表与导入面，本波不扩，ARCH-DEBT 挂 v0.15。
