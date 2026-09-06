@@ -84,10 +84,13 @@ Web GUI → 设置 → 「Agent 组织」：
 ## 安装
 
 ```bash
-# 方式一：从 GitHub 直接安装
+# 方式一：从 npm（已发布 @wangwangwangbaojun/dsh-agent-org）
+dsh plugin --profile web add @wangwangwangbaojun/dsh-agent-org
+
+# 方式二：从 GitHub 直接安装
 dsh plugin --profile web add github:wangwangwangbaojun/dsh-agent-org
 
-# 方式二：本地 clone / link 开发安装
+# 方式三：本地 clone / link 开发安装
 git clone https://github.com/wangwangwangbaojun/dsh-agent-org.git
 dsh plugin --profile web add link:./dsh-agent-org
 # 重启 DSH Web 服务后生效；浏览器需刷新页面（前端模块在页面加载时拉取）
