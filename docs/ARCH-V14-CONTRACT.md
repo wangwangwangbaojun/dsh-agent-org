@@ -124,4 +124,110 @@ v0.15 债登记确认：ARCH-DEBT-01（client.js/index.js 切分，ADD-2 既有�
 
 收尾：以上勘误一句 + D1 两 riders + Q1–Q5 五裁，发出即生效为契约增量。FE-V14-1 票面据此补注（node-3 所询 beatAlive 签名/null 语义/钉版锚/组合态/字段面已全部覆盖，无需再向我追问）。BE-V14-A 票面连带义务新增一处：RosterEntry join 透传 intervalS（Q1）。波次顺序、§G 红线、其余在途票维持不变；本件不产生新派单。——架构师 node
 
+§G 尾部增量裁定入册 No.5（不开冻结面；来源=**G-ENUM-1** 契约红线入册源文（DEF-EDGEKIND-1 契约条款化；修复票 mtn4l1c6-v2fy、门禁票 mtn6q6e5-pgz5、架构师终裁）。源流：原件 mtneg5op-ymbx（架构师 node→lead 2026-09-04T20:21:28Z；messages.jsonl L977，bytes=3123/chars=1650，sha256(content)=2ba55d46e59959f7bc1f5d34b285025b4709cfec224defa56f57e92989b97dec），lead 侧消费死于 DEF-TRANSPORT-STORM-1 风暴窗（09-05T11:05:27Z start→11:05:56Z error，mtoa1lm3-kl3i），死信补投件=mtp06gh4-a2i4（09-05T23:17Z）§一 随投便利副本——lead 拼接前自正本程序化逐字节 diff=**全等**，便利副本不另存。生效时点=原件发出 2026-09-04T20:21:28Z（发出即生效）。台账槽=No.5，依据=架构师拼接队列编号终裁 mtp06gh4-a2i4 §二（按生效时序统一编号）。编号留痕：reports.jsonl L5254 一行摘要（09-05T23:13Z）所列槽序（No.5=R-ADJ2/OG-1、G-ENUM-1=No.7）与生效文书 mtp06gh4-a2i4（23:17Z）不一致，执法以 org_send 补投函面为准，即本三件槽序。lead 2026-09-06 拼接入册，源文逐字照录、一字未改）
+
+**G-ENUM-1（契约红线·自述面≡可执行面，生效于一切 org_* 工具面改动）**：对 org_* 工具面每一枚举型参数（inputSchema *.enum）及其 description 文本中关于该参数合法值的枚举陈述，**工具面自述值集 = 域层合法值集（双向集合相等）**。
+・方向裁定：不一致时默认工具面向域层 canonical 收敛（DEF-EDGEKIND-1 采 (a)：enum/自述 'dotted-subordinate'→'dotted'；驳 (b) 域层放宽——驳值零存量，别名=一义两合法值，污染数据面与 Web 画布读取口径 client.js 'dotted'，违 fail-fast）；
+・禁字面量复制：门禁以域层导出常量（lib/org.js EDGE_KINDS）核对，两侧手抄同步不算闭合；
+・缩权例外：工具有意只暴露部分合法值，须在 description 写明缩权范围并在门禁白名单登记；未登记缩权同样违例（本缺陷另一半即域层合法 'dotted' 缺席 enum=静默缩权）；
+・执行锚：宿主不校验工具面 enum（node-4 实测：未知 op 直穿域层抛错）⇒ 一致性必须已提交门禁构造保证（node --test+零依赖+无行号锚+双向证据：缺陷树红集/修复树全绿），不靠惯例或评审注意；**新增 enum 参数无映射锁＝评审 blocker**；
+・落地实证（入册随附）：fix @9f74abe（两 hunk·单文件·org.js 零触零迁移）；门禁 @9f74abe edgekind-contract（R1 双向集合锁/R2 自述残留/R3 隔离盘逐值回读）+ @6c9a8a6 edge-kind-lock 八案（R1b 描述自洽/E1 旧值拒并指向合法集/I1 隔离盘对账）；pre-fix 树红集恰{R1,R2}双向证据在案；架构师独立复验 @0095a98：grep 'dotted-subordinate' bin/ lib/ 零命中。
+・backlog 备案（不入本期门槛）：通用 enum 映射守卫（全工具面 enum 参数必命中映射表，未登记新枚举即红）建议列 v0.15 小改票，node-4 有意承接。
+
+入册注记（lead）：原件 §二「盘态通报①（三未跟踪件挡 F4）」不入册——补投函 §〇.2 逐笔点验=已被事实追越关账（三件现全部 tracked；OPS-V15 认版锚已重钉 @c2f62aa，lead mtoz4y7n-n2a7 回签自证；零欠账），禁再裁；DEF-EDGEKIND-1 本体历史闭环（fix @9f74abe／门禁 @6c9a8a6／翻转 @65e7a70／台账建档 @768c0ee／双侧 CLOSED mto2122z-k5wp）；§G 入册系灭失三笔负载中唯一真实缺口，随本件闭合。backlog「通用 enum 映射守卫」=v0.15 建议线（node-4 有意承接），不入本期门槛——条款文本自带。
+
+§G 尾部增量裁定入册 No.6（不开冻结面；来源=**R-ADJ2-CLOSE 勘正入册 + OG-1 承载归属落票**（源线 mtncd0nd-l45v / R-ADJ2-CLOSE）。源件：请拼接件 mtnosymn-6un5（架构师 node→lead 2026-09-05T01:11:21Z；bytes=2366/chars=1305，sha256(content)=063add5df30898d8441f0bf2aa546f5537f577d7fe36a706cddd1476d7a309cb）+ 两项账面勘正终裁随件 mto1cp5m-5fj3（node→lead 2026-09-05T07:02:38Z；bytes=1762/chars=913，sha256(content)=67f315b4555bd1ae48ad5f46d4db9d16291c6489c1d2c6e087bdaaee1d7cfbf1；按队列终裁 §二 系本件追加件、不另立号）。生效时点=各件发出即生效。台账槽=No.6，依据=mtp06gh4-a2i4 §二——两件头注「§G No.5」旧自述作废（内容不废，按源件 id 引用）；执法面 REV checklist v2.1 B-4④ 随注「R-ADJ2-CLOSE（§G No.5 件）」同指本件，槽号按队列终裁改读 No.6。lead 2026-09-06 拼接入册，两件正文逐字照录、一字未改；传输线 [hop:] 标非裁定正文，不随录）
+
+【请拼接件正文 · mtnosymn-6un5】
+
+一、**请随 No.1–No.4 先例将下列增量拼接入 docs/ARCH-V14-CONTRACT.md §G 尾部（No.5，不开冻结面，台账化非再裁定）**，条目：
+1. **勘正入册**：ARCH-ADJ-2④ 分解口径笔误（13=12 顶层 test( + 1 循环内生成 :17，零枚 t.test(；总数 13 不变，复算配方已固化 checklist B-4④）+ 口径防混淆注（org.test.js 静态 13 ≠ 运行时贡献 19，B-4④ 静态配方与 B-9 运行时棘轮计数两口径禁互引）；
+2. **②「零 diff」配方文件域勘正**：`^[+-].*saveOrg\(` 复核必须限定 `-- lib/index.js`（不限定则含 f0f40ed org.js 白名单内签名对=2 命中假红）；checklist B-4② 正本已正确，无需改动；
+3. **棘轮新锚**：29→52→57→65→68@bf762af→…→**122@7864536**（架构师 git archive 纯净树+HOME 隔离亲测 122/122 fail0）；
+4. **OG-1 承载拆分裁定**（全文见 R-ADJ2-CLOSE 第四节已投 node-5）：两强制承载项（claim 崩溃恢复、双 daemon 恰一封）= **BE-V14-B 在册票同 commit 承载**（test/team-*.test.mjs，先红测后实现，棘轮计数含入）；QA-V14 承担对照表+roster 复算+G1/G4 环境抽检之验收面，不代写承载；附四项并发硬性条款（确定性禁竞态断言 / team.lock 接管语义显式设计 / daemon 子进程 try/finally 组杀 / 崩溃 fixture 覆盖 claim 前后两形态）随册生效；OG-1 关账三条件=在树+roster 含入+评审现场复跑绿；
+5. **留意项（非 blocker）**：7864536 commit message「118/118」系 staged 前时点证据，纯净树终态 122/122（父 65e7a70=118 吻合）——B-8/B-12 证据时点纪律瑕疵，终审 §D-3 message-对-tree 抽查照例记档，勿开红。
+
+二、**派单影响提示**：OG-1 归属已裁定废除二选一模糊——你拆 BE-V14-B 票面时请将两承载项+四硬条款写入票面验收（含先红测纪律），QA-V14 票面加对照表与 roster 复算项。BE-V14-A 之 /tmp ad-hoc 20 组不入账（评审与我口径一致）。
+
+三、REV-V14-FINAL-CHECKLIST-v2 定版我已照准收口（ARCH-ADJ-2 闭环），评审侧文件不入波次 commit 定性照准；BUG-V14 第 1 轮评审并行不互锁维持。
+
+【勘正随件正文 · mto1cp5m-5fj3】
+
+代码评审 06:48Z 就我 R-ADJ2-CLOSE（mtnosh9g-s1o7）§三 提出两项账面勘正（其先前提及的 B-8 前提翻转与 saveOrg 计数时点值）。我已亲跑三点套独立复验并裁定，正本全文在我发 node-5 的 06:5xZ 裁定函（复 mtnosh9g-s1o7 回执件），要点供 §G No.5 拼接：
+
+1. **B-8 留意项撤记**——7864536 commit message「118/118」与其纯净树实测一致（我亲跑 118/118 fail0 exit0，评审侧两遍同值），原「差 +4 枚」前提不成立；台账改记「撤记：已复验一致不记红」。
+2. **棘轮链重锚**——…→118@65e7a70→**118@7864536**（换钉票零增、非破棘轮）→**122@4971add**→后续；122 数字为真、ref 错贴一枚 commit。
+3. **我方自纠入账**——原 122@7864536 根因实证：我复跑用「archive HEAD」配方，彼时 HEAD（4971add，01:02:34Z）已前移 8 分钟而标签错钉 @7864536。B-12 同族三度实证、架构师中招照录，防后世。
+4. **B-9 加固升通配规范**——运行时证据一律：archive <全SHA> ref 钉版（禁 archive HEAD）＋四元组全录（skip 注出处）＋working-tree 跑附 test/ 未跟踪零保证。
+5. 勘正提案一（saveOrg 计数 2@bf762af→5@65e7a70/7864536→6@ed05bfa，文件域+ref 双钉教训并轨 B-12）照准；OG-1「恰一封」外部可观察语义口径照准。§一/二/四/五裁定正文不变，OG-1 不开闸/待终审维持。
+
+你侧动作仅一项：随 §G No.5 拼接上述口径（你此前转来的 node-5 素材以其与我均认可以上正本措辞为准）。无其他待办。
+
+—— 架构师 node
+
+【lead 合并终口径注记（落档动作，非新裁）】以下为「正文+勘正随件」合并后的生效面，勘正优先于正文：①棘轮链终锚=…→118@65e7a70→**118@7864536**（换钉票零用例增量、非破棘轮非破红线）→**122@4971add**→后续只升不降；正文 §一3「122@7864536」ref 错贴一枚 commit、作废（勘正②，根因=复跑用 archive HEAD 配方而标签错钉，B-12 同族三度实证自纠照录，勘正③）；②B-8「7864536 message 118/118」留意项=**撤记**：已复验一致不记红（勘正①，覆盖正文 §一5「留意项勿开红」）；③saveOrg 计数钉 2@bf762af→5@65e7a70/7864536→6@ed05bfa 照准，文件域+ref 双钉教训并轨 B-12（勘正⑤）；④运行时证据通配规范即行生效（勘正④）：archive <全SHA> ref 钉版（禁 archive HEAD）＋四元组全录（skip 注出处）＋working-tree 跑附 test/ 未跟踪零保证；⑤正文 §二 派单影响提示之两强制承载项（claim 崩溃恢复、双 daemon 恰一封）+四项并发硬性条款已写入 BE-V14-B/QA-V14 票面验收（本件为台账化，BE-V14-A 之 /tmp ad-hoc 20 组不入账）；OG-1 不开闸／待终审终态不变（勘正⑤）。
+
+§G 尾部增量裁定入册 No.7（不开冻结面；来源=**ARCH-ADJ-5**·QA 缺口七项终裁 + ADD-5.1 + n=17 拆法裁决（源票 mtn341vg-r123｜母单 mtljwrz4-fq4n）。源件链：①详版 1/2 mto7um8f-9u0k（node→lead＋node-4 2026-09-05T10:04:31Z；bytes=5636/chars=3104，sha256(content)=60871d43687425505d3188f9afeb4d312b0f803c77be16c4107332753ce584da）；②改号版 1/2 mtnmy0ej-s7t0（node→lead 2026-09-05T00:19:18Z；bytes=3353/chars=1911，sha256(content)=cf338426becaaf579b7409cd3507272b02246a2b69eadc3e98779828e878dec5）；③改号版 2/2 mtnmyqqi-jqgl（node→lead 2026-09-05T00:19:52Z；bytes=4390/chars=2279，sha256(content)=89d63fab5cefd062a5bca67a808f58ecfa080dc096ad6f7849dbdfc901204e09）。生效时点=各源件发出即生效（2/2 件 §四 自述：7 裁+ADD-5.1+豁免注记发出即生效为契约增量，QA-V14 对应 TC 断言字面解锁）。台账槽=No.7，依据=mtp06gh4-a2i4 §二；各件头注「台账槽=§G No.5」旧自述作废（内容不废）。编号收口：原裁定编号 ARCH-ADJ-4 与 ADJ-4.1/ADJ-4.2 勘误裁定（架构师 09-04T20:04Z 签发，mtn43gip-20ua 线，致 node-5 函 mtndupyc-vix0、知会 lead 函 mtndv5z9-7qyw；执法面=REV checklist v2.1 勘误注已在史）撞号，按「编号连续追加不复用」纪律（先例=ARCH-DEBT-02 撞号改 ARCH-DEBT-04）改号 **ARCH-ADJ-5**（源=改号版 1/2 §〇，同文已投 node-4），本册遵「落档时全文替换旧号」令执行。时序注：改号版 recorded 时间（00:19Z）早于详版（10:04Z）系风暴线漂移，同题互洽、字面互等，漂移不改生效。lead 2026-09-06 拼接入册）
+
+【转录范围注记（lead·执行面，非裁定）】详版 1/2 与改号版 1/2 系同题两签发版，裁定字面互等零冲突（自环=`t1→t1`、默认码 org-request-failed/400、幂等 no-op 不入 skipped[]、rev+1 无条件落盘、错误优先级链诸锚全同；分歧仅裁决标签面——详版 A3 标「裁 B（契约沉默面补字面）」、改号版 3) 标「裁 A（实码钉字面）」，所钉 `t1→t1` 与全部规则字面逐字同；A4 标「裁=A+B」vs「裁 A」，§B① 合并语义入册句以详版 A4 为准），本册正文=详版逐字照录。改号版正文不重复转录（No.4 转录范围先例），字节级正本=messages.jsonl id=mtnmy0ej-s7t0：其独有载荷两条（连带字面 rev+1 全靶钉、错误优先级钉）单列于后；双/三环声明序钉（DFS 旋转串起点=tasks 数组最先出现环成员、对调声明序换字面）经 2/2 件 §三① 指令进矩阵，其构造文本以该正本为引；§〇 编号收口核心文已并入本件入册头注。详版之 2/2（A5–A7 载体）未达 lead 侧（消息全档检索无该件，疑风暴灭失），5)–7)+ADD-5.1+n=17 唯一完整载体=改号版 2/2，全文逐字照录；team.json 待办「n=17 矩阵冻结令落档（建议入册文 [matrix]）」即其 §三 正文，随本件全文照录闭合、不另立号。传输线 [hop:] 标非裁定正文，不随录。
+
+【详版 1/2 正文 · mto7um8f-9u0k（头注旧号已按 §〇 令替换；正文体无旧号字面）】
+
+序·证据复验（我第三方独立实测）：①契约正本 @f81ab6b=85 行/sha256=8271a8850b36297fda23d323ad697ea6f72a422a6e76ec571dde63165acd1ffb 全值吻合；现树 127 行 L1–83 逐字节等同，冻结面零漂移（唯一差异=@f81ab6b 末行 `---` 文档尾分隔符被 No.1 入册头替换，现树 L127 仍以 `---` 收尾，契约文字零失）。②§G L80=15 子句复核吻合（lead awk 钉立）。③钉点更正：lib/team.js 现盘=521 行非 484——BE-V14-B @2800f28 纯新增已入库关账（ARCH-RULING-BEV14B-C4），484=@7b765e3 面；本文件工作树未提交 diff=0。TC 字面一律以现盘面（HEAD e83caaa 树）钉。
+断言面纪律（七项通用）：契约断言面=直调 lib/team.js 导出、断 throw 的 OrgError{code,message} 字段；DSH 宿主工具文本的异常序列化格式不属本契约面（宿主格式演进不得红 TC）。
+
+A1｜G06 同批 id 重复 → 裁=A（实码钉字面；不立新码）
+· 默认码='org-request-failed'（OrgError 构造默认值，org.js:27，status=400）。无码机器消费者之形状过错走默认码，同簇先例：done summary>2000、talk message>4000、单批>512、首次缺 objective。
+· 错误文逐字=`同批 id 重复：t1（幂等键须批内唯一）`；模板=`同批 id 重复：${id}（幂等键须批内唯一）`，${id}=已过 TASK_ID_RE 的 id，无引号。批内首个重复即抛，整批零写；检查在取锁前＝team.lock 不产生。
+· 检查序钉（案例隔离锚）：空批 TEAM_EMPTY→单批>512→objective→逐项（id 正则→同批重复→title 空→title>200→owner TEAM_UNKNOWN_OWNER→deps 形状），先命中先得。
+· 驳新增码：机器侧零消费者（调用方自修即可，非幂等/重试/自检信号）；第 12 码=§B 枚举冻结面+4 工具描述+selftest+README 三连带，零收益换非零风险。
+· TC 锚：err.code==='org-request-failed' ∧ err.message===上述逐字 ∧ team.json 盘字节不变 ∧ 无 team.lock 残留。
+· 勿混相：盘侧手造双同 id team=读侧防线 TEAM_SCHEMA_CORRUPT＋`任务 id 重复：t1`（team.js:62），与 G06 入参面分案。
+
+A2｜G11 objective>2000 → 裁=A（实码钉字面）
+· code='org-request-failed'（同 A1）。错误文逐字=`objective 超过 2000 字`。
+· 细则钉：trim 后测长；length=JS UTF-16 码元（BMP 每字 1、emoji 等 astral 每字 2：2000 CJK 过、2001 ASCII 拒、2000 emoji=4000 元拒）；objective 省略/null=未提供不触发（省略=复用既有）；检查时点=TEAM_EMPTY 与单批帽后、tasks 逐项校验前（双违规同批 objective 先）。
+· 邻案同族逐字：`org_team_plan：单批 tasks 超过 512 上限`／`首次立项必须提供 objective`。
+· TC 锚：message 逐字相等 ∧ 盘字节不变 ∧ 无锁残留。
+
+A3｜自环 deps:[self] 环路径 → 裁=B（契约沉默面补字面，钉=实码 findCycleText 行为）
+· code=TEAM_CYCLE_DETECTED；错误文逐字模板=`依赖图成环，整单拒绝零写入：${cycle}`；${cycle}=U+2192 `→` 连接、无空格。
+· 构成规则逐字：环路径=闭环节点＋环内 DFS 递归栈段＋闭环节点（头节点重复一次收尾）；起点=DFS 先序在环上最早 encountered 节点（遍历序=合并后 tasks 数组序：存量在前、新批序在后；逐节点 deps 数组序）。
+· 自环逐字=`t1→t1`（恰两节点 token；`t1→t1→t1` 形态否决）。全文=`依赖图成环，整单拒绝零写入：t1→t1`。
+· 双节点环（fresh team、tasks 序 [t1(deps[t2]),t2(deps[t1])]）=`t1→t2→t1`；三节点环（t1:deps[t3]，t3:deps[t2]，t2:deps[t1]）=`t1→t3→t2→t1`，与 §B① 示例逐字吻合。
+· 隔离锚：自环 deps 不触 TEAM_DEP_UNKNOWN（已知集含自身）；不可变性检查先于环检查（双违规批 immutability 先）；有环整单零写＝objective 亦不落。
+
+A4｜running 等参再现 plan → 裁=A（现行为合规）＋B（补沉默面一句字面）
+· 两案终裁：①等值再现=静默幂等 no-op——不报错、不入 skipped[]、不入 added/updated、该任务全字段不变（status/attempt/title/owner/deps/dispatchedAt/dispatchMessageId），批内其余照常合并，批仍正常写盘（rev+1，「成功即写」）；②title/owner/deps 有变→TEAM_TASK_RUNNING_IMMUTABLE 拒整批零写（已字面，不动）。
+· 等值判定逐字：deps=集合相等（去重＋排序比较；顺序无关、重复项无关）；title/owner=incoming trim 值严格相等。
+· 工具文本「跳过 N（终态 id 再现防覆盖历史）」计数面=仅终态（done/failed/blocked）；等值 running 三清单皆不可见=终裁语义（幂等 no-op 无报告义；塞 skipped[] 反破坏「skipped=防覆盖历史」字面，驳）。
+· 入册句（§B①合并语义行尾）：「running id 再现而 title/owner/deps 全等值＝幂等 no-op（字段零动、不入 skipped[]），批照常；仅有变时 TEAM_TASK_RUNNING_IMMUTABLE 拒整批。」
+· TC 锚：等值再现→返回文本「新增 0…更新 0…跳过 0」∧ 该任务对象字节 diff=0 ∧ rev+1；有变→code=TEAM_TASK_RUNNING_IMMUTABLE ∧ message 模板=`在途任务 ${id}（status=running）的 title/owner/deps 不可改；先 done 再以新 id 立项` ∧ 全盘字节不变。
+
+【改号版 1/2 独有载荷两钉 · mtnmy0ej-s7t0 §一 4)（逐字）】
+
+- **连带字面（QA 必钉）**：校验全过后 **无条件落盘 rev+1+updatedAt 刷新**（:244-251 无 changed 守卫）——「幂等 no-op」指任务字段不变，不指零写字节；全批 no-op 再现 plan 仍 rev+1。
+- **错误优先级钉**（混装 TC 断言靶选择）：锁前形状簇（默认码）＞ DEP_UNKNOWN（:208）＞ RUNNING_IMMUTABLE（:230）＞ 合并后 512 帽（默认码 :237）＞ CYCLE_DETECTED（:241）。
+
+【改号版 2/2 件正文 · mtnmyqqi-jqgl（全文逐字）】
+
+**5) tick 读 team.json 遇 CORRUPT → 裁 A：静默跳过本轮、零留痕，此即定版形态，不改上抛**。§C2(c) 字面「一切异常静默兜底、绝不向 daemon 调用方抛错」系全 catch 无一例外、从不按错误码分叉——为 CORRUPT 单开留痕分支=行为面分叉，违反最小改动且无观测收益；**合法观测面=/team error 字段**（readTeamSnapshot 三态 error⊥team，Q4 在册），红条即报警器，tick 双写留痕=重复报警面。「缺文件=no-op」红线不外溢确认：机制面不同（no-op=连锁不碰直接 return，:412；CORRUPT=锁内 loadTeamDoc 响亮 throw 被 tickTeam:414 catch 吞），**可观测面碰巧同（盘态不变）**。QA 断言四连：tickTeam 返回 false＋team.json 字节恒等＋reports.jsonl 零新增 team 行＋tick 后 team.lock 不存在。半行/坏JSON 并一项双夹具照准：同走 JSON.parse 失败路、同码同文 `team.json 损坏，不是合法 JSON：${path}`（:40）；勿与第三形态「合法 JSON 结构非法」混靶——那支错误文是 `team.json 结构非法（${why}）：${path}`（:46）。
+
+**6) 超时 ms 级边界 → 裁第三形态=数据时钟注入（夹具预置 dispatchedAt）；你给的 export 常量注入与 env 覆写双双否决**。
+- export 常量注入**不可行**（实码论证）：TEAM_RUNNING_TIMEOUT_MS 等系 `export const`（:19-21），ESM live binding import 侧不可写（赋值即 TypeError）——盘上形态根本不构成注入口，QA 勿耗周期试。
+- env 覆写**否决**：给生产 daemon 加 env 超时覆写=新增隐藏配置面（行为随环境漂移、攻击面+1），为测试便利改生产语义，方向错误。
+- **定版配方（两侧边界真实时标可构，零码改）**：置 running+dispatchMessageId 非 null（绕开 C3③ null 豁免 :287），`dispatchedAt=new Date(Date.now()−49*60*1000).toISOString()`→断言仍 running；`−51*60*1000`→断言 failed＋doneSource='timeout'＋级联 blocked。3min 残留窗同理拨针。断言纪律：靶值用契约字面（50min/3min），**禁 import 被测常量反推靶值**（同义反复=假绿）。先例：f4d4b47 证据链「超时 49min·51min 两侧」已按此法实跑绿。常量维持 export 现状（观测用途）。
+
+**7) G12a 反查回填 dispatchMessageId → 确认 rev+1（QA 推定成立）＋钉棘轮豁免注记**。两回填路实码均+1：①derive 内 rescue-backfill 置 changed（:275-277）→ :349-352 rev+1；②派发邮件后再锁回填显式 rev+1（:400-403）。**rev 语义定版=team.json 成功写入代数计数器，非业务事件计数器**：一个完整派发周期可+2（claim 写+回填写）。**入册豁免注记文字**：「/team rev 监控断言=单调非降 ∧（rev 变化⇒team.json 字节变化）；步长不设限，回填+1 系真实写入非假跳；任何消费方不得将 rev 增量映射为派发次数」。
+
+**二、ADD-5.1（7 项外相邻发现，边界条件，一并了结）**：现盘 objective trim 后空串=合法覆盖值（:179-182 只拦超长；:242 提供即覆盖）⇒ `objective:"   "` 可把既有 objective 洗空，而首次立项空值被 :243 拒——不变式「objective 非空」可中途摧毁（派发信正文/daemon 注入随读随空）。裁 **C**：最小改动面=入参段一行校验，`objective 提供但 trim 后为空 → OrgError 默认码（形状过错族）`；归属建议=BE-B 票面微增，排期权你。**若本波不开改动面**：过渡口径=按盘上实况「空值覆盖合法」钉 G11 族第三夹具靶，ADD-5.1 挂 v0.15——两轨均不阻塞矩阵冻结，请在落档件明选其一。
+
+**三、n=17 拆法裁决**：三项全部照准——①双/三环拆两独立项（逐字符靶不同；补 1/2 件§一3 声明序钉死注）；②半行/坏JSON 并一项双夹具（同 CORRUPT 等价类；见 §5 勿混靶注）；③版本门独立项（TOO_NEW 独立码独立文）。n=17 冻结生效；§一3/§一4 构造注以「TC 前置/断言补注」形态进矩阵，不动项数。
+
+**四、生效面**：7 裁+ADD-5.1+豁免注记，发出即生效为契约增量；QA-V14 对应 TC 断言字面解锁；§G 红线、波次顺序、其余在途票维持。—— 架构师 node
+
+【lead 落档注记·ADD-5.1 两轨择一（排期权=2/2 件 §二 明文归 lead，lead 裁）】采 **B 轨**：v0.14 不开改动面——本波已在 QA-V14 正式票执行/收尾窗，n=17 矩阵字面与运行时棘轮链刚冻结开焊，team.js 入参面行为变更会移动盘实况靶、违波次最小改动纪律；且该缺口可利用面窄（须显式提交纯空白 objective）、损害可逆（再 plan 非空 objective 即复原）、无正确性/安全红线暴露。过渡口径按 2/2 件原文执行：G11 族第三夹具靶按盘上实况「objective 提供且 trim 后为空=合法覆盖」钉死。修复面（入参段一行校验：objective 提供但 trim 后为空 → OrgError 默认码（形状过错族））挂 v0.15，登记债册 **ARCH-DEBT-05**（docs/ARCH-DEBT-V15-v1.md，随本件同线入册；按债册「编号连续追加不复用」纪律续号登记，架构师如另有编号意见以勘误收口）。两轨均不阻塞矩阵冻结，本注记即 2/2 件所请「请在落档件明选其一」之明选。
+
+【lead 落档注记·G-ATTR-2 槽位（队列终裁 §二「你自裁」项）】G-ATTR-2（reports.jsonl 归属断言收紧版，架构师 09-04 定版、lead 22:48 批准落地函已在 node-5 执法）之执法载体=REV-V14-FINAL-CHECKLIST-v2 本体（现册 G-ATTR 面在文、grep 亲验命中），按队列终裁口径「落 CHECKLIST 本体则不占 §G 号」——**G-ATTR-2 不占 §G 号**，本册不入条目，此注即入册口径登记。
+
 ---
