@@ -13,6 +13,7 @@
 ### ARCH-DEBT-02｜bin/org-role.js atomicWriteJson（:117-121 @2f30d58 位）归一至 lib/org.js 泛化原语
 - 来源：ARCH-ADJ-2 D2（Q2 裁定：窄口径豁免成立，**不构成第四套**——红线绑定对象=org.json/team.json 配置文档写者，该件仅写 daemon 态）。
 - 护栏（v0.14 波次内即执法，非 v0.15 才开始）：GQ2-1（blocker）豁免仅绑定现有调用面——org-role.js 新增任何 tmp+rename 实现体、或写面扩至 org.json/team.json，豁免作废即 blocker；GQ2-2 归一后 lib/ 之外任何第二实现体一律 blocker。
+- v0.15 同票评估半行（node-5 建议、lead 受账 [mtnmtyg0-8vfd 答复件]，2026-09-06）：开票 DEBT-02 时同票评估 tmpNameFor 命名 `.<prefix>.<pid>.<ts(ms)>.tmp` 增加随机/path 分量后缀——同目录+同毫秒+同 pid 现同名，全同步管线无实害（在票面/函面记录，非现势执法）；命名形态被 Checklist-v2 §B-3③ 复核锚与 golden（org.test.js @c3af1d1，sha256=6923abd7…）双锁，扩后缀=形态改动涉 R3，届期须架构师重裁后方可动形，v0.15 开票时不得径改命名式。
 - 状态：已登记（架构师债册确认），待 v0.15 排期。
 
 ### ARCH-DEBT-03｜lib/index.js saveCursor 裸 writeFileSync 非原子写（S3）
